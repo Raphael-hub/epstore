@@ -6,4 +6,4 @@ database throught an API.
 
 ## Database
 
-![Database Diagram](eCommerce.png)
+![Database Diagram](dbdiagram.png)
