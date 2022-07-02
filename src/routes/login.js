@@ -1,10 +1,8 @@
-const Router = require('express-promise-router');
+const router = require('express').Router();
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const bcrypt = require('bcrypt');
 const db = require('../db/helpers.js');
-
-const router = new Router();
 
 passport.serializeUser((user, done) => {
   return done(null, user.id);
@@ -41,14 +39,21 @@ passport.use(
   })
 );
 
+router.get('/', (req, res, next) => {
+  if (req.session.messages) {
+    return res.status(400).json({ error: req.session.messages[0] });
+  }
+  if (req.user) {
+    return res.status(401).json({ error: 'Already logged in' });
+  }
+  return res.status(200).json({ info: 'Login with POST' });
+});
+
 router.post('/',
   passport.authenticate('local',
-    { successRedirect: '/profile',failureRedirect: '/login', failureMessage: true }),
-  async (req, res, next) => {
-    if (req.session.messages) {
-      res.status(400).json(req.session.messages);
-    }
-    res.status(200).json({ info: `Logged in as user with id: ${req.user.id}` });
+    { failureRedirect: 'login', failureMessage: true }),
+  (req, res, next) => {
+    return res.redirect('/profile');
   }
 );
 
