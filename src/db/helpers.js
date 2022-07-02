@@ -1,14 +1,22 @@
 const { query } = require('./index.js');
 
+const getUserById = async (id) => {
+  try {
+    const { rows } = await query(
+      'SELECT * FROM users WHERE id = $1', [id]
+    );
+    return rows[0] || null;
+  } catch (err) {
+    throw err;
+  }
+};
+
 const getUserByUsername = async (username) => {
   try {
-    const result = await query(
+    const { rows } = await query(
       'SELECT * FROM users WHERE username = $1', [username]
     );
-    if (!result) {
-      return null;
-    }
-    return result.rows[0];
+    return rows[0] || null;
   } catch (err) {
     throw err;
   }
@@ -16,13 +24,10 @@ const getUserByUsername = async (username) => {
 
 const getUserByEmail = async (email) => {
   try {
-    const result = await query(
+    const { rows } = await query(
       'SELECT * FROM users WHERE email = $1', [email]
     );
-    if (!result) {
-      return null;
-    }
-    return result.rows[0];
+    return rows[0] || null;
   } catch (err) {
     throw err;
   }
@@ -32,15 +37,12 @@ const createUser = async (user) => {
   try {
     const { username, password, email, name, address } = user;
     const date = new Date();
-    const result = await query(
+    const { rows } = await query(
       'INSERT INTO users (username, password, email, name, address, created_at) \
       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
       [username, password, email, name, address, date.toISOString()]
     );
-    if (!result) {
-      return null;
-    }
-    return result.rows[0];
+    return rows[0] || null;
   } catch (err) {
     throw err;
   }
@@ -48,11 +50,8 @@ const createUser = async (user) => {
 
 const getUsers = async () => {
   try {
-    const result = await query('SELECT * FROM users ORDER BY id ASC');
-    if (!result) {
-      return null;
-    }
-    return result.rows[0];
+    const { rows } = await query('SELECT * FROM users ORDER BY id ASC');
+    return rows[0] || null;
   } catch (err) {
     throw err;
   }
