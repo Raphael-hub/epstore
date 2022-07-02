@@ -18,7 +18,7 @@ router.post('/', async (req, res, next) => {
       const userObject = { username, password: hashedPassword, email, name, address };
 
       const user = await db.createUser(userObject);
-      if (user !== null) {
+      if (user) {
         req.login(user, error => {
           if (error) {
             throw error;
