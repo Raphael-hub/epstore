@@ -14,10 +14,17 @@ router.post('/', async (req, res, next) => {
     } else {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
-      const user = { username, password: hashedPassword, email, name, address };
+      const userObject = { username, password: hashedPassword, email, name, address };
 
-      const result = await db.createUser(user);
-      res.status(201).json(result);
+      const user = await db.createUser(userObject);
+      if (user !== null) {
+        req.login(user, error => {
+          if (error) {
+            throw error;
+          }
+          res.status(201).json({ info: `User created with id: ${req.user.id}` });
+        });
+      }
     }
   } catch (err) {
     next(err);
