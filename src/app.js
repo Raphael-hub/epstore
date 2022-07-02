@@ -21,6 +21,7 @@ process.on('SIGINT', () => {
   pool.end(() => {
     console.log('[db] pool has ended');
   });
+  console.log('[server] shutting down');
   process.exit();
 });
 
