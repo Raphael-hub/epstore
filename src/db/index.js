@@ -20,7 +20,7 @@ module.exports = {
       const start = Date.now();
       const res = await pool.query(text, params);
       const duration = Date.now() - start;
-      console.log('[db] executed query', { text, duration, rows: res.rowCount });
+      console.log('[db] executed query', { text, params, duration, rows: res.rowCount });
       return res;
     } catch (err) {
       throw err;
