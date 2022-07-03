@@ -48,9 +48,28 @@ const createUser = async (user) => {
   }
 };
 
-const getUsers = async () => {
+const updateUserById = async (id, updates) => {
+  const { username, password, email, name, address } = updates;
   try {
-    const { rows } = await query('SELECT * FROM users ORDER BY id ASC');
+    const result = await getUserById(id);
+    if (!result) {
+      throw new Error('User not found');
+    }
+    if (username !== result.username) {
+      if (await getUserByUsername(username)) {
+        throw new Error('User with that username already exists');
+      }
+    } else if (email !== result.email) {
+      if (await getUserByEmail(email)) {
+        throw new Error('User with that email already exists');
+      }
+    }
+    const { rows } = await query(
+      'UPDATE users \
+      SET (username, password, email, name, address) = ($1, $2, $3, $4, $5) \
+      WHERE id = $6 RETURNING *',
+      [username, password, email, name, address, id]
+    );
     return rows[0] || null;
   } catch (err) {
     throw err;
@@ -61,6 +80,6 @@ module.exports = {
   getUserById,
   getUserByUsername,
   getUserByEmail,
-  getUsers,
   createUser,
+  updateUserById,
 };
