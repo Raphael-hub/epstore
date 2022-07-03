@@ -11,7 +11,7 @@ const isLoggedIn = (req, res, next) => {
 };
 
 router.get('/', isLoggedIn, (req, res, next) => {
-  return res.status(200).json(user);
+  return res.status(200).json(req.user);
 });
 
 router.put('/update', isLoggedIn, async (req, res, next) => {

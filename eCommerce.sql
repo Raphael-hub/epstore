@@ -17,7 +17,7 @@ CREATE TABLE "users" (
   "password" varchar NOT NULL,
   "email" varchar(60) UNIQUE NOT NULL,
   "name" varchar NOT NULL,
-  "address" varchar NOT NULL,
+  "address" varchar,
   "created_at" timestamp NOT NULL
 );
 
