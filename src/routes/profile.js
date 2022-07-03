@@ -11,9 +11,7 @@ const isLoggedIn = (req, res, next) => {
 };
 
 router.get('/', isLoggedIn, (req, res, next) => {
-  res.status(200).json({
-    info: `Logged in as user ${req.user.username}`
-  });
+  return res.status(200).json(user);
 });
 
 router.put('/update', isLoggedIn, async (req, res, next) => {
@@ -28,10 +26,9 @@ router.put('/update', isLoggedIn, async (req, res, next) => {
     const updated = { ...req.user, ...changes };
     const user = await db.updateUserById(req.user.id, updated);
     if (!user) {
-      return res.status(400).json({ error: 'Unable to update user' });
+      return res.status(500).json({ error: 'Unable to update user' });
     }
     return res.status(200).json(user);
-    //return res.status(200).json({ info: 'Successfully update user: ${req.user.username}' });
   } catch (err) {
     return next(err);
   }
