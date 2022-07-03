@@ -3,8 +3,11 @@ const bcrypt = require('bcrypt');
 const db = require('../db/helpers.js');
 
 router.post('/', async (req, res, next) => {
+  if (!req.body.address) {
+    req.body.address = null;
+  }
   const { username, password, email, name, address } = req.body;
-  if (!username || !password || !email || !name || !address) {
+  if (!username || !password || !email || !name) {
     return next({ message: 'Missing user data' });
   }
   try {
