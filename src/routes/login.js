@@ -11,10 +11,10 @@ passport.serializeUser((user, done) => {
 passport.deserializeUser(async (id, done) => {
   try {
     const user = await db.getUserById(id);
-    if (user) {
-      return done(null, user);
+    if (!user) {
+      return done(null, false);
     }
-    return done(null, false);
+    return done(null, user);
   } catch (err) {
     return done(err);
   }
