@@ -29,7 +29,7 @@ Finally create a `.env` file in the root directory and put in the following:
 ```javascript
 DATABASE_URL='postgres://<user>:<password>@127.0.0.1:5432/<database>'
 SESSION_SECRET='<RANDOM STRING>'
-NODE_ENV=<development or production>
+NODE_ENV='<development or production>'
 ```
 
 By setting `NODE_ENV` to development you will get detailed logs on all
