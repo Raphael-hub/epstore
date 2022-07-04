@@ -33,4 +33,21 @@ router.put('/update', isLoggedIn, async (req, res, next) => {
   }
 });
 
+router.delete('/delete', isLoggedIn, async (req, res, next) => {
+  try {
+    const deleted = await db.deleteUserById(req.user.id);
+    if (deleted === null) {
+      return next({ message: 'Unable to delete user' });
+    }
+    req.logout(err => {
+      if (err) {
+        throw err;
+      }
+      return res.status(200).json({ info: `Deleted user ${deleted.username}` })
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

@@ -73,10 +73,23 @@ const updateUserById = async (id, updates) => {
   }
 };
 
+const deleteUserById = async (id) => {
+  try {
+    const { rows } = await query(
+      'DELETE FROM users WHERE id = $1 RETURNING *',
+      [id]
+    );
+    return rows[0] || null;
+  } catch (err) {
+    throw err;
+  }
+};
+
 module.exports = {
   getUserById,
   getUserByUsername,
   getUserByEmail,
   createUser,
   updateUserById,
+  deleteUserById,
 };
