@@ -55,14 +55,11 @@ const updateUserById = async (id, updates) => {
     if (!result) {
       throw new Error('User not found');
     }
-    if (username !== result.username) {
-      if (await getUserByUsername(username)) {
-        throw new Error('User with that username already exists');
-      }
-    } else if (email !== result.email) {
-      if (await getUserByEmail(email)) {
-        throw new Error('User with that email already exists');
-      }
+    if (username !== result.username && await getUserByUsername(username)) {
+      throw new Error('User with that username already exists');
+    }
+    if (email !== result.email && await getUserByEmail(email)) {
+      throw new Error('User with that email already exists');
     }
     const { rows } = await query(
       'UPDATE users \

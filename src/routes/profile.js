@@ -5,9 +5,8 @@ const db = require('../db/helpers.js');
 const isLoggedIn = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({ error: 'Not logged in' });
-  } else {
-    return next();
   }
+  return next();
 };
 
 router.get('/', isLoggedIn, (req, res, next) => {
@@ -17,7 +16,7 @@ router.get('/', isLoggedIn, (req, res, next) => {
 router.put('/update', isLoggedIn, async (req, res, next) => {
   try {
     // Fill from current user details and update any changes from body
-    let changes = req.body;
+    const changes = req.body;
     if (changes.password && changes.password !== req.user.password) {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(changes.password, salt);
@@ -26,7 +25,7 @@ router.put('/update', isLoggedIn, async (req, res, next) => {
     const updated = { ...req.user, ...changes };
     const user = await db.updateUserById(req.user.id, updated);
     if (!user) {
-      return res.status(500).json({ error: 'Unable to update user' });
+      return next({ message: 'Unable to update user' });
     }
     return res.status(200).json(user);
   } catch (err) {
