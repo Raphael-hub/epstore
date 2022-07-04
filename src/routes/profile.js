@@ -1,13 +1,7 @@
 const router = require('express').Router();
 const bcrypt = require('bcrypt');
 const db = require('../db/helpers.js');
-
-const isLoggedIn = (req, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({ error: 'Not logged in' });
-  }
-  return next();
-};
+const { isLoggedIn } = require('../utils/loggedIn.js');
 
 router.get('/', isLoggedIn, (req, res, next) => {
   return res.status(200).json(req.user);

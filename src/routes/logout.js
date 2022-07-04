@@ -1,9 +1,7 @@
 const router = require('express').Router();
+const { isLoggedIn } = require('../utils/loggedIn.js');
 
-router.post('/', (req, res, next) => {
-  if (!req.user) {
-    return res.status(400).json({ error: 'Not currently logged in' });
-  }
+router.post('/', isLoggedIn, (req, res, next) => {
   req.logout(err => {
     if (err) {
       throw err;

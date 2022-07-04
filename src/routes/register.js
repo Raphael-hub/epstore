@@ -1,8 +1,9 @@
 const router = require('express').Router();
 const bcrypt = require('bcrypt');
 const db = require('../db/helpers.js');
+const { isLoggedOut } = require('../utils/loggedIn.js');
 
-router.post('/', async (req, res, next) => {
+router.post('/', isLoggedOut, async (req, res, next) => {
   const { username, password, email, name } = req.body;
   if (!username || !password || !email || !name) {
     return next({ message: 'Missing user data' });
