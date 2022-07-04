@@ -3,7 +3,7 @@ const session = require('express-session');
 const passport = require('passport');
 const bodyParser = require('body-parser');
 
-const { SESSION_SECRET } = require('./config.js');
+const { SESSION_SECRET, NODE_ENV } = require('./config.js');
 const mountRoutes = require('./routes/index.js');
 const { pool } = require('./db/index.js');
 
@@ -41,7 +41,11 @@ process.on('SIGINT', () => {
   process.exit();
 });
 
-const port = process.env.PORT || 3001;
-app.listen(port, () => {
-  console.log(`[server] listening on port ${port}`)
-})
+if (NODE_ENV !== 'test') {
+  const port = process.env.PORT || 3001;
+  app.listen(port, () => {
+    console.log(`[server] listening on port ${port}`)
+  });
+}
+
+module.exports = app;
