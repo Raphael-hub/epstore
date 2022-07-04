@@ -2,8 +2,8 @@ const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
 const bodyParser = require('body-parser');
-const dotenv = require('dotenv').config({ path: '../.env' });
 
+const { SESSION_SECRET } = require('./config.js');
 const mountRoutes = require('./routes/index.js');
 const { pool } = require('./db/index.js');
 
@@ -14,7 +14,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const store = new session.MemoryStore();
 app.use(
   session({
-    secret: process.env.SESSION_SECRET,
+    secret: SESSION_SECRET,
     cookie: { maxAge: 900000, secure: false },
     rolling: true,
     saveUninitialized: false,

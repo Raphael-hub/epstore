@@ -1,8 +1,8 @@
-require('dotenv').config();
 const { Pool } = require('pg');
+const { DATABASE_URL } = require('../config.js');
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: DATABASE_URL
 });
 
 pool.on('connect', () => {
