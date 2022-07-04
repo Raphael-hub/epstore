@@ -5,7 +5,16 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/server.js",
-    "test": "node tests/run.js"
+    "test": "cross-env NODE_ENV=test jest --coverage --forceExit"
+  },
+  "jest": {
+    "roots": [
+      "tests/"
+    ],
+    "testEnvironment": "node",
+    "coveragePathIgnorePatterns": [
+      "node_modules/"
+    ]
   },
   "repository": {
     "type": "git",
@@ -31,5 +40,11 @@
     "passport": "^0.6.0",
     "passport-local": "^1.0.0",
     "pg": "^8.7.3"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "jest": "^28.1.2",
+    "mocha": "^10.0.0",
+    "supertest": "^6.2.4"
   }
 }
