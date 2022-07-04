@@ -3,10 +3,7 @@ const bcrypt = require('bcrypt');
 const db = require('../db/helpers.js');
 
 router.post('/', async (req, res, next) => {
-  if (!req.body.address) {
-    req.body.address = null;
-  }
-  const { username, password, email, name, address } = req.body;
+  const { username, password, email, name } = req.body;
   if (!username || !password || !email || !name) {
     return next({ message: 'Missing user data' });
   }
@@ -19,7 +16,7 @@ router.post('/', async (req, res, next) => {
     }
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    const userObject = { username, password: hashedPassword, email, name, address };
+    const userObject = { username, password: hashedPassword, email, name, address: null };
 
     const user = await db.createUser(userObject);
     if (!user) {
