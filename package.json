@@ -4,6 +4,7 @@
   "description": "Express + PostgreSQL eCommerce platform for buying/selling items",
   "main": "index.js",
   "scripts": {
+    "start": "node src/server.js",
     "test": "node tests/run.js"
   },
   "repository": {
