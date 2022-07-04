@@ -40,6 +40,9 @@ router.put('/', isLoggedIn, async (req, res, next) => {
       changes.password = hashedPassword;
     }
     const updated = { ...req.user, ...changes };
+    if (JSON.stringify(updated) === JSON.stringify(req.user)) {
+      return res.status(400).json({ info: 'No changes given' });
+    }
     const user = await db.updateUserById(req.user.id, updated);
     if (!user) {
       return next({ message: 'Unable to update user' });
