@@ -24,14 +24,14 @@ provided to set up the tables using the command below.
 psql -U <username> -d <database> -f eCommerce.sql -a
 ```
 
-Finally create a `.env` file in the `src/` directory and put in the following:
+Finally create a `.env` file in the root directory and put in the following:
 
 ```javascript
 DATABASE_URL='postgres://<user>:<password>@127.0.0.1:5432/<database>'
 SESSION_SECRET='<RANDOM STRING>'
 ```
 
-Then you can run `npm start` or `node src/server.js` and begin to interact
+Then you can run `npm start` and begin to interact
 with the API, as long as your PostgreSQL database is running.
 
 ## Database
