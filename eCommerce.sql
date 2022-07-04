@@ -23,7 +23,7 @@ CREATE TABLE "users" (
 
 CREATE TABLE "products" (
   "id" serial PRIMARY KEY,
-  "user_id" int REFERENCES "users"("id"),
+  "user_id" int REFERENCES "users"("id") ON DELETE CASCADE,
   "name" varchar NOT NULL,
   "description" varchar NOT NULL,
   "price" numeric(6, 2) NOT NULL,
@@ -34,22 +34,22 @@ CREATE TABLE "products" (
 );
 
 CREATE TABLE "users_carts" (
-  "user_id" int REFERENCES "users"("id"),
-  "product_id" int REFERENCES "products"("id"),
+  "user_id" int REFERENCES "users"("id") ON DELETE CASCADE,
+  "product_id" int REFERENCES "products"("id") ON DELETE CASCADE,
   "quantity" int DEFAULT 1,
   CHECK("quantity" > 0)
 );
 
 CREATE TABLE "orders" (
   "id" serial PRIMARY KEY,
-  "user_id" int REFERENCES "users"("id"),
+  "user_id" int REFERENCES "users"("id") ON DELETE RESTRICT,
   "status" order_status,
   "created_at" timestamp NOT NULL
 );
 
 CREATE TABLE "orders_products" (
-  "order_id" int REFERENCES "orders"("id"),
-  "product_id" int REFERENCES "products"("id"),
+  "order_id" int REFERENCES "orders"("id") ON DELETE CASCADE,
+  "product_id" int REFERENCES "products"("id") ON DELETE RESTRICT,
   "quantity" int DEFAULT 1,
   CHECK ("quantity" > 0)
 );
