@@ -22,15 +22,15 @@ router.post('/', async (req, res, next) => {
     const userObject = { username, password: hashedPassword, email, name, address };
 
     const user = await db.createUser(userObject);
-    if (user) {
-      req.login(user, error => {
-        if (error) {
-          throw error;
-        }
-        return res.redirect('/profile');
-      });
+    if (!user) {
+      return next({ message: 'Unable to create user' });
     }
-    return next({ message: 'Unable to create user' });
+    req.login(user, error => {
+      if (error) {
+        throw error;
+      }
+      return res.redirect('/profile');
+    });
   } catch (err) {
     return next(err);
   }
