@@ -13,7 +13,24 @@ router.get('/', isLoggedIn, (req, res, next) => {
   return res.status(200).json(req.user);
 });
 
-router.put('/update', isLoggedIn, async (req, res, next) => {
+router.delete('/', isLoggedIn, async (req, res, next) => {
+  try {
+    const deleted = await db.deleteUserById(req.user.id);
+    if (deleted === null) {
+      return next({ message: 'Unable to delete user' });
+    }
+    req.logout(err => {
+      if (err) {
+        throw err;
+      }
+      return res.status(200).json({ info: `Deleted user ${deleted.username}` })
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.put('/', isLoggedIn, async (req, res, next) => {
   try {
     // Fill from current user details and update any changes from body
     const changes = req.body;
@@ -28,23 +45,6 @@ router.put('/update', isLoggedIn, async (req, res, next) => {
       return next({ message: 'Unable to update user' });
     }
     return res.status(200).json(user);
-  } catch (err) {
-    return next(err);
-  }
-});
-
-router.delete('/delete', isLoggedIn, async (req, res, next) => {
-  try {
-    const deleted = await db.deleteUserById(req.user.id);
-    if (deleted === null) {
-      return next({ message: 'Unable to delete user' });
-    }
-    req.logout(err => {
-      if (err) {
-        throw err;
-      }
-      return res.status(200).json({ info: `Deleted user ${deleted.username}` })
-    });
   } catch (err) {
     return next(err);
   }
