@@ -1,10 +1,11 @@
 const router = require('express').Router();
 const bcrypt = require('bcrypt');
+const _ = require('lodash');
 const db = require('../db/helpers.js');
 const { isLoggedIn } = require('../utils/loggedIn.js');
 
 router.get('/', isLoggedIn, (req, res, next) => {
-  return res.status(200).json(req.user);
+  return res.status(200).json({ user: _.omit(req.user, ['password']) });
 });
 
 router.delete('/', isLoggedIn, async (req, res, next) => {
@@ -41,7 +42,7 @@ router.put('/', isLoggedIn, async (req, res, next) => {
     if (!user) {
       return next({ message: 'Unable to update user' });
     }
-    return res.status(200).json(user);
+    return res.status(200).json({ user: _.omit(user, ['password']) });
   } catch (err) {
     return next(err);
   }
