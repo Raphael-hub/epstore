@@ -42,14 +42,14 @@ CREATE TABLE "users_carts" (
 
 CREATE TABLE "orders" (
   "id" serial PRIMARY KEY,
-  "user_id" int REFERENCES "users"("id") ON DELETE RESTRICT,
+  "user_id" int REFERENCES "users"("id") ON DELETE CASCADE,
   "status" order_status,
   "created_at" timestamp NOT NULL
 );
 
 CREATE TABLE "orders_products" (
   "order_id" int REFERENCES "orders"("id") ON DELETE CASCADE,
-  "product_id" int REFERENCES "products"("id") ON DELETE RESTRICT,
+  "product_id" int REFERENCES "products"("id") ON DELETE CASCADE,
   "quantity" int DEFAULT 1,
   CHECK ("quantity" > 0)
 );
