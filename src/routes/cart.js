@@ -18,7 +18,7 @@ router.get('/', isLoggedIn, async (req, res, next) => {
 router.post('/', isLoggedIn, async (req, res, next) => {
   const { product_id, quantity } = req.body;
   try {
-    if ((getProductStock(product_id) - quantity) < 0) {
+    if ((await getProductStock(product_id) - quantity) < 0) {
       return next({ message: 'Not enough stock' });
     }
     const cart = await carts.getUserCart(req.user.id);
@@ -39,7 +39,7 @@ router.post('/', isLoggedIn, async (req, res, next) => {
 router.put('/', isLoggedIn, async (req, res, next) => {
   const { product_id, quantity } = req.body;
   try {
-    if ((getProductStock(product_id) - quantity) < 0) {
+    if ((await getProductStock(product_id) - quantity) < 0) {
       return next({ message: 'Not enough stock' });
     }
     const updated = await carts.updateProductInCart(req.user.id, product_id, quantity);
