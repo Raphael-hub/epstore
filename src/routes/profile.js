@@ -40,7 +40,7 @@ router.put('/', isLoggedIn, async (req, res, next) => {
     }
     const user = await users.updateUserById(req.user.id, updated);
     if (!user) {
-      return next({ message: 'Unable to update user' });
+      return next({ message: 'Error updating user' });
     }
     return res.status(200).json({ user: _.omit(user, ['password']) });
   } catch (err) {

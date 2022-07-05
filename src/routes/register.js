@@ -21,7 +21,7 @@ router.post('/', isLoggedOut, async (req, res, next) => {
 
     const user = await users.createUser(userObject);
     if (!user) {
-      return next({ message: 'Unable to create user' });
+      return next({ message: 'Error creating user' });
     }
     req.login(user, error => {
       if (error) {
