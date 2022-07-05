@@ -100,18 +100,11 @@ const tableHasColumn = async (column) => {
   }
 };
 
-const getProductById = async (id, column = 'listed_at', sort = 'desc') => {
+const getProductById = async (id) => {
   try {
-    if (!await tableHasColumn(column)) {
-      throw new Error('Unknown column to sort by');
-    }
-    if (!['asc', 'desc'].includes(sort.toLowerCase())) {
-      throw new Error('Unknown direction to sort in');
-    }
     const { rows } = await query(
-      'SELECT * FROM products WHERE id = $1 \
-      ORDER BY $2 $3',
-      [id, column, sort.toUpperCase()]
+      'SELECT * FROM products WHERE id = $1',
+      [id]
     );
     return rows[0] || null;
   } catch (err) {
@@ -132,7 +125,6 @@ const getProductsByName = async (name, column = 'listed_at', sort = 'desc') => {
       ORDER BY $2 $3',
       [name, column, sort.toUpperCase()]
     );
-    if (rows.length === 1) return rows[0];
     return rows || null;
   } catch (err) {
     throw err;
@@ -151,7 +143,6 @@ const getProducts = async (column = 'listed_at', sort = 'desc') => {
       'SELECT * FROM products ORDER BY $1 $2',
       [column, sort.toUpperCase()]
     );
-    if (rows.length === 1) return rows[0];
     return rows || null;
   } catch (err) {
     throw err;
@@ -208,6 +199,96 @@ const deleteProductById = async (id) => {
   }
 };
 
+const getUserCart = async (user_id) => {
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
+    const { rows } = await query(
+      'SELECT * FROM users_carts WHERE user_id = $1',
+      [user_id]
+    );
+    return rows || null;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const addProductToCart = async (user_id, product_id, quantity) => {
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
+    if (!await getProductById(product_id)) {
+      throw new Error('Product does not exist');
+    }
+    const { rows } = await query(
+      'INSERT INTO users_carts \
+      (user_id, product_id, quantity) \
+      VALUES ($1, $2, $3) RETURNING *',
+      [user_id, product_id, quantity]
+    );
+    return rows[0] || null;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const updateProductInCart = async (user_id, product_id, quantity) => {
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
+    if (!await getProductById(product_id)) {
+      throw new Error('Product does not exist');
+    }
+    const { rows } = await query(
+      'UPDATE users_carts \
+      SET quantity = $1 \
+      WHERE user_id = $2 AND product_id = $3 RETURNING *',
+      [quantity, user_id, product_id]
+    );
+    return rows[0] || null;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const removeProductFromCart = async (user_id, product_id) => {
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
+    if (!await getProductById(product_id)) {
+      throw new Error('Product does not exist');
+    }
+    const { rows } = await query(
+      'DELETE FROM users_carts \
+      WHERE user_id = $1 AND product_id = $2 RETURNING *',
+      [user_id, product_id]
+    );
+    return rows[0] || null;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const emptyUserCart = async (user_id) => {
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
+    const { rows } = await query(
+      'DELETE FROM users_carts \
+      WHERE user_id = $1 RETURNING *',
+      [user_id]
+    );
+    return rows || null;
+  } catch (err) {
+    throw err;
+  }
+};
+
 module.exports = {
   users: {
     getUserById,
@@ -224,5 +305,12 @@ module.exports = {
     createProduct,
     updateProductById,
     deleteProductById,
+  },
+  carts: {
+    getUserCart,
+    addProductToCart,
+    updateProductInCart,
+    removeProductFromCart,
+    emptyUserCart,
   },
 };
