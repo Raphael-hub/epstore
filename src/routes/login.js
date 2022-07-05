@@ -2,7 +2,8 @@ const router = require('express').Router();
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const bcrypt = require('bcrypt');
-const db = require('../db/helpers.js');
+const { users } = require('../db/helpers.js');
+const { isLoggedOut } = require('../utils/loggedIn.js');
 
 passport.serializeUser((user, done) => {
   return done(null, user.id);
@@ -10,7 +11,7 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser(async (id, done) => {
   try {
-    const user = await db.getUserById(id);
+    const user = await users.getUserById(id);
     if (!user) {
       return done(null, false);
     }
@@ -23,7 +24,7 @@ passport.deserializeUser(async (id, done) => {
 passport.use(
   new LocalStrategy(async (username, password, done) => {
     try {
-      const user = await db.getUserByUsername(username);
+      const user = await users.getUserByUsername(username);
       if (!user) {
         return done(null, false, { message: 'Incorrect username or password' });
       }
@@ -38,17 +39,15 @@ passport.use(
   })
 );
 
-router.get('/', (req, res, next) => {
+router.get('/', isLoggedOut, (req, res, next) => {
   if (req.session.messages) {
     return res.status(400).json({ error: req.session.messages[0] });
-  }
-  if (req.user) {
-    return res.status(401).json({ error: 'Already logged in' });
   }
   return res.status(200).json({ info: 'Login with POST' });
 });
 
 router.post('/',
+  isLoggedOut,
   passport.authenticate('local',
     { failureRedirect: 'login', failureMessage: true }),
   (req, res, next) => {

@@ -86,10 +86,13 @@ const deleteUserById = async (id) => {
 };
 
 module.exports = {
-  getUserById,
-  getUserByUsername,
-  getUserByEmail,
-  createUser,
-  updateUserById,
-  deleteUserById,
+  users: {
+    getUserById,
+    getUserByUsername,
+    getUserByEmail,
+    createUser,
+    updateUserById,
+    deleteUserById
+  },
+  products: {},
 };

@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const bcrypt = require('bcrypt');
-const db = require('../db/helpers.js');
+const { users } = require('../db/helpers.js');
 const { isLoggedOut } = require('../utils/loggedIn.js');
 
 router.post('/', isLoggedOut, async (req, res, next) => {
@@ -9,17 +9,17 @@ router.post('/', isLoggedOut, async (req, res, next) => {
     return next({ message: 'Missing user data' });
   }
   try {
-    if (await db.getUserByUsername(username)) {
+    if (await users.getUserByUsername(username)) {
       return res.status(403).json({ error: 'Username already exists' });
     }
-    if (await db.getUserByEmail(email)) {
+    if (await users.getUserByEmail(email)) {
       return res.status(403).json({ error: 'Email already in use' });
     }
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     const userObject = { username, password: hashedPassword, email, name, address: null };
 
-    const user = await db.createUser(userObject);
+    const user = await users.createUser(userObject);
     if (!user) {
       return next({ message: 'Unable to create user' });
     }
