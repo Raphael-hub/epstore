@@ -122,7 +122,8 @@ const getProductsByUser = async (username) => {
     }
     const user_id = result.rows[0].id;
     const { rows } = await query(
-      'SELECT * FROM products WHERE user_id = $1',
+      'SELECT * FROM products WHERE user_id = $1 \
+      ORDER BY listed_at DESC',
       [user_id]
     );
     return rows || null;
@@ -138,7 +139,7 @@ const getProducts = async (column = 'price', sort = 'asc') => {
   try {
     const { rows } = await query(
       queryString,
-      [column, sort.toUpperCase()]
+      [column]
     );
     return rows || null;
   } catch (err) {
