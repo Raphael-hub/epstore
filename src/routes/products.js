@@ -5,9 +5,6 @@ const { products } = require('../db/helpers.js');
 const { isLoggedIn } = require('../utils/loggedIn.js');
 const { isInStock } = require('../utils/inStock.js');
 
-
-
-
 //get one product by Id
 router.get('/', isLoggedIn, async (req, res, next) => {
     const {product_id} = req.body
@@ -24,7 +21,7 @@ router.get('/', isLoggedIn, async (req, res, next) => {
 
   // get one product by name
   // *****check getProductsByName --not sure if I should enter (column, sort) as parameters
-     // since you e.g. gave default column value 'listed_at', yet you have code that checks if the column is empty, 
+     // since you e.g. gave default column value 'listed_at', yet you have code that checks if the column is empty,
      //despite it not being able to be empty since it will always have the placeholder, No?
   router.get('/', isLoggedIn, async (req, res, next) => {
     const {product_name, column, sort} = req.body
@@ -45,7 +42,7 @@ router.get('/', isLoggedIn, async (req, res, next) => {
     const {column, sort} = req.body
     try {
       const  allProducts = await products.getProducts(column, sort);
-     
+
       return res.status(200).json({ product: allProducts });
     } catch (err) {
       return next(err);
@@ -59,7 +56,7 @@ router.get('/', isLoggedIn, async (req, res, next) => {
     // not sure about the one below, alternative = const {product_id} = req.body;
     const {product_id } = product.id;
     try {
-      
+
       const  allProducts = await products.getProducts('listed_at', 'desc');
 
       if (allProducts.filter(i => i.product_id === product_id).length > 0) {
@@ -114,7 +111,4 @@ router.get('/', isLoggedIn, async (req, res, next) => {
     }
   });
 
-  // delete/clear products in table 
-
-
-
+  // delete/clear products in table
