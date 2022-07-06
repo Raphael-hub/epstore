@@ -6,7 +6,18 @@ const { isLoggedIn } = require('../utils/loggedIn.js');
 const { isInStock } = require('../utils/inStock.js');
 const {checkUserOwnsProduct} = require('../utils/userOwns.js')
 
-
+// get all products
+// ***** check getProducts below --not sure I used the correct parameters see big comment above,
+router.get('/',  async (req, res, next) => {
+  const {column, sort} = req.body
+  try {
+    const  allProducts = await products.getProducts(column, sort);
+   
+    return res.status(200).json({ product: allProducts });
+  } catch (err) {
+    return next(err);
+  }
+});
 
 //get one product by Id
 router.get('/:id',  async (req, res, next) => {
@@ -23,9 +34,7 @@ router.get('/:id',  async (req, res, next) => {
   });
 
   // get one product by name
-  // *****check getProductsByName --not sure if I should enter (column, sort) as parameters
-     // since you e.g. gave default column value 'listed_at', yet you have code that checks if the column is empty, 
-     //despite it not being able to be empty since it will always have the placeholder, No?
+
   router.get('/:name', async (req, res, next) => {
     const {column, sort} = req.body;
     const {product_name} = req.params.id;
@@ -40,18 +49,7 @@ router.get('/:id',  async (req, res, next) => {
     }
   });
 
-// get all products
-// ***** check getProducts below --not sure I used the correct parameters see big comment above,
-router.get('/',  async (req, res, next) => {
-    const {column, sort} = req.body
-    try {
-      const  allProducts = await products.getProducts(column, sort);
-     
-      return res.status(200).json({ product: allProducts });
-    } catch (err) {
-      return next(err);
-    }
-  });
+
 
  // add new product
  // ****check const allProducts line, allProducts.filter line
@@ -77,9 +75,7 @@ router.get('/',  async (req, res, next) => {
     }
   });
  // update one product by id
- // **** check if await getProductStock(product_id)-product.quantity line
- // I don't think you can do product.quantity
- //*** check {product} = req.body
+ 
   router.put('/:id', isLoggedIn,checkUserOwnsProduct, async (req, res, next) => {
     const { product_id } = req.params.id;
     const {updates} = req.query
