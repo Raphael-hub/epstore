@@ -4,7 +4,7 @@ const { products } = require('../db/helpers.js');
 
 const { isLoggedIn } = require('../utils/loggedIn.js');
 const { isInStock } = require('../utils/inStock.js');
-
+const {checkUserOwnsProduct} = require('../utils/userOwns.js')
 
 
 
@@ -80,11 +80,13 @@ router.get('/',  async (req, res, next) => {
  // **** check if await getProductStock(product_id)-product.quantity line
  // I don't think you can do product.quantity
  //*** check {product} = req.body
-  router.put('/', isLoggedIn, async (req, res, next) => {
-    const { product_id, updates } = req.body;
-    const {product} =req.body;
+  router.put('/:id', isLoggedIn,checkUserOwnsProduct, async (req, res, next) => {
+    const { product_id } = req.params.id;
+    const {updates} = req.query
+    
     try {
-      if ((await getProductStock(product_id) - product.quantity) < 0) {
+
+      if ((await getProductStock(product_id) - updates.quantity) < 0) {
         return next({ message: 'Not enough stock' });
       }
       const updated = await products.updateProductById(product_id, updates);
@@ -100,9 +102,9 @@ router.get('/',  async (req, res, next) => {
   });
 
   // delete product by id
-  router.delete('/', isLoggedIn, async (req, res, next) => {
+  router.delete('/:id', isLoggedIn, checkUserOwnsProduct, async (req, res, next) => {
     try {
-      const { product_id } = req.body;
+      const { product_id } = req.params.id;
       const deleted = await products.deleteProductById(product_id);
       if (!deleted) {
         return next({ message: 'Unable to remove product' });
