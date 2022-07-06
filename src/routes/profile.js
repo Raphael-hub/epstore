@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const bcrypt = require('bcrypt');
 const _ = require('lodash');
-const { users } = require('../db/helpers.js');
+const { users, products } = require('../db/helpers.js');
 const { isLoggedIn } = require('../utils/loggedIn.js');
 
 router.get('/', isLoggedIn, (req, res, next) => {
@@ -43,6 +43,19 @@ router.put('/', isLoggedIn, async (req, res, next) => {
       return next({ message: 'Error updating user' });
     }
     return res.status(200).json({ user: _.omit(user, ['password']) });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.get('/:username', async (req, res, next) => {
+  const username = req.params.username;
+  try {
+    const listings = await products.getProductsByUser(username);
+    if (!listings) {
+      return res.status(200).json({ info: 'This user has no products' });
+    }
+    return res.status(200).json({ user: username, products: listings });
   } catch (err) {
     return next(err);
   }
