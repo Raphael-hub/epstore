@@ -9,8 +9,8 @@ const { isInStock } = require('../utils/inStock.js');
 
 
 //get one product by Id
-router.get('/:product_id', isLoggedIn, async (req, res, next) => {
-    const {product_id} = req.params.id;
+router.get('/:id',  async (req, res, next) => {
+    const {product_id} = parseInt(req.params.id);
     try {
       const  product = await products.getProductById(product_id);
       if (product.length === 0) {
@@ -26,8 +26,9 @@ router.get('/:product_id', isLoggedIn, async (req, res, next) => {
   // *****check getProductsByName --not sure if I should enter (column, sort) as parameters
      // since you e.g. gave default column value 'listed_at', yet you have code that checks if the column is empty, 
      //despite it not being able to be empty since it will always have the placeholder, No?
-  router.get('/', isLoggedIn, async (req, res, next) => {
-    const {product_name, column, sort} = req.body
+  router.get('/:name', async (req, res, next) => {
+    const {column, sort} = req.body;
+    const {product_name} = req.params.id;
     try {
       const  product = await products.getProductsByName(product_name, column, sort);
       if (product.length === 0) {
@@ -41,7 +42,7 @@ router.get('/:product_id', isLoggedIn, async (req, res, next) => {
 
 // get all products
 // ***** check getProducts below --not sure I used the correct parameters see big comment above,
-router.get('/', isLoggedIn, async (req, res, next) => {
+router.get('/',  async (req, res, next) => {
     const {column, sort} = req.body
     try {
       const  allProducts = await products.getProducts(column, sort);
