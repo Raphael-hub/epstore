@@ -168,18 +168,21 @@ const createProduct = async (product) => {
   }
 };
 
-const updateProductById = async (id, updates) => {
+const updateProductById = async (user_id, product_id, updates) => {
   const { name, description, price, currency, stock } = updates;
   try {
-    const result = await getProductById(id);
+    const result = await getProductById(product_id);
     if (!result) {
       throw new Error('Product not found');
+    }
+    if (result.rows[0].user_id !== user_id) {
+      throw new Error("Can't update other user's products");
     }
     const { rows } = await query(
       'UPDATE products \
       SET (name, description, price, currency, stock) = ($1, $2, $3, $4, $5) \
       WHERE id = $6 RETURNING *',
-      [name, description, price, currency, stock, id]
+      [name, description, price, currency, stock, product_id]
     );
     return rows[0] || null;
   } catch (err) {
@@ -187,8 +190,15 @@ const updateProductById = async (id, updates) => {
   }
 };
 
-const deleteProductById = async (id) => {
+const deleteProductById = async (user_id, product_id) => {
   try {
+    const result = await getProductById(product_id);
+    if (!result) {
+      throw new Error('Product not found');
+    }
+    if (result.rows[0].user_id !== user_id) {
+      throw new Error("Can't delete other user's products");
+    }
     const { rows } = await query(
       'DELETE FROM products WHERE id = $1 RETURNING *',
       [id]
