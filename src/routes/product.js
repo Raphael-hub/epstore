@@ -9,8 +9,8 @@ const { isInStock } = require('../utils/inStock.js');
 
 
 //get one product by Id
-router.get('/', isLoggedIn, async (req, res, next) => {
-    const {product_id} = req.body
+router.get('/:product_id', isLoggedIn, async (req, res, next) => {
+    const {product_id} = req.params.id;
     try {
       const  product = await products.getProductById(product_id);
       if (product.length === 0) {
