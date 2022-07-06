@@ -116,15 +116,14 @@ const getProductsByKeyword = async (word, column = 'price', sort = 'asc') => {
 
 const getProductsByUser = async (username) => {
   try {
-    const result = await getUserByUsername(username);
-    if (!result) {
+    const user = await getUserByUsername(username);
+    if (!user) {
       throw new Error('Can\'t find username');
     }
-    const user_id = result.rows[0].id;
     const { rows } = await query(
       'SELECT * FROM products WHERE user_id = $1 \
       ORDER BY listed_at DESC',
-      [user_id]
+      [user.id]
     );
     return rows || null;
   } catch (err) {
@@ -169,11 +168,11 @@ const createProduct = async (product) => {
 const updateProductById = async (user_id, product_id, updates) => {
   const { name, description, price, currency, stock } = updates;
   try {
-    const result = await getProductById(product_id);
-    if (!result) {
+    const product = await getProductById(product_id);
+    if (!product) {
       throw new Error('Product not found');
     }
-    if (result.rows[0].user_id !== user_id) {
+    if (product.user_id !== user_id) {
       throw new Error("Can't update other user's products");
     }
     const { rows } = await query(
@@ -190,11 +189,11 @@ const updateProductById = async (user_id, product_id, updates) => {
 
 const deleteProductById = async (user_id, product_id) => {
   try {
-    const result = await getProductById(product_id);
-    if (!result) {
+    const product = await getProductById(product_id);
+    if (!product) {
       throw new Error('Product not found');
     }
-    if (result.rows[0].user_id !== user_id) {
+    if (product.user_id !== user_id) {
       throw new Error("Can't delete other user's products");
     }
     const { rows } = await query(
@@ -309,6 +308,7 @@ module.exports = {
   products: {
     getProductById,
     getProductsByKeyword,
+    getProductsByUser,
     getProducts,
     createProduct,
     updateProductById,
