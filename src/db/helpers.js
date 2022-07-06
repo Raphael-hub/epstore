@@ -85,21 +85,6 @@ const deleteUserById = async (id) => {
   }
 };
 
-const tableHasColumn = async (column) => {
-  try {
-    const { rows } = await query(
-      'SELECT column_name FROM information_schema.columns \
-      WHERE table_name = \'products\''
-    );
-    if (!rows.includes(column)) {
-      return false;
-    }
-    return true;
-  } catch (err) {
-    throw err;
-  }
-};
-
 const getProductById = async (id) => {
   try {
     const { rows } = await query(
@@ -112,18 +97,16 @@ const getProductById = async (id) => {
   }
 };
 
-const getProductsByName = async (name, column = 'listed_at', sort = 'desc') => {
+const getProductsByKeyword = async (word, column = 'price', sort = 'asc') => {
+  let queryString = 'SELECT * FROM products \
+      WHERE name ILIKE $1 OR description ILIKE $1 \
+      ORDER BY $2';
+  if (sort.toLowerCase() === 'asc') queryString += ' ASC';
+  if (sort.toLowerCase() === 'desc') queryString += ' DESC';
   try {
-    if (!await tableHasColumn(column)) {
-      throw new Error('Unknown column to sort by');
-    }
-    if (!['asc', 'desc'].includes(sort.toLowerCase())) {
-      throw new Error('Unknown direction to sort in');
-    }
     const { rows } = await query(
-      'SELECT * FROM products WHERE name = $1 \
-      ORDER BY $2 $3',
-      [name, column, sort.toUpperCase()]
+      queryString,
+      [`%${word.toLowerCase()}%`, column]
     );
     return rows || null;
   } catch (err) {
@@ -131,17 +114,31 @@ const getProductsByName = async (name, column = 'listed_at', sort = 'desc') => {
   }
 };
 
-const getProducts = async (column = 'listed_at', sort = 'desc') => {
+const getProductsByUser = async (username) => {
   try {
-    if (!await tableHasColumn(column)) {
-      throw new Error('Unknown column to sort by');
-    }
-    if (!['asc', 'desc'].includes(sort.toLowerCase())) {
-      throw new Error('Unknown direction to sort in');
+    const user = await getUserByUsername(username);
+    if (!user) {
+      throw new Error('Can\'t find username');
     }
     const { rows } = await query(
-      'SELECT * FROM products ORDER BY $1 $2',
-      [column, sort.toUpperCase()]
+      'SELECT * FROM products WHERE user_id = $1 \
+      ORDER BY listed_at DESC',
+      [user.id]
+    );
+    return rows || null;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getProducts = async (column = 'price', sort = 'asc') => {
+  let queryString = 'SELECT * FROM products ORDER BY $1';
+  if (sort.toLowerCase() === 'asc') queryString += ' ASC';
+  if (sort.toLowerCase() === 'desc') queryString += ' DESC';
+  try {
+    const { rows } = await query(
+      queryString,
+      [column]
     );
     return rows || null;
   } catch (err) {
@@ -171,11 +168,11 @@ const createProduct = async (product) => {
 const updateProductById = async (user_id, product_id, updates) => {
   const { name, description, price, currency, stock } = updates;
   try {
-    const result = await getProductById(product_id);
-    if (!result) {
+    const product = await getProductById(product_id);
+    if (!product) {
       throw new Error('Product not found');
     }
-    if (result.rows[0].user_id !== user_id) {
+    if (product.user_id !== user_id) {
       throw new Error("Can't update other user's products");
     }
     const { rows } = await query(
@@ -192,11 +189,11 @@ const updateProductById = async (user_id, product_id, updates) => {
 
 const deleteProductById = async (user_id, product_id) => {
   try {
-    const result = await getProductById(product_id);
-    if (!result) {
+    const product = await getProductById(product_id);
+    if (!product) {
       throw new Error('Product not found');
     }
-    if (result.rows[0].user_id !== user_id) {
+    if (product.user_id !== user_id) {
       throw new Error("Can't delete other user's products");
     }
     const { rows } = await query(
@@ -310,7 +307,8 @@ module.exports = {
   },
   products: {
     getProductById,
-    getProductsByName,
+    getProductsByKeyword,
+    getProductsByUser,
     getProducts,
     createProduct,
     updateProductById,
