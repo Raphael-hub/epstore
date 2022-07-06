@@ -1,6 +1,7 @@
 /* TODO
  * Add URL queries for sorting
  * Add URL params for product IDs
+ * Remove isLoggedIn checks where not needed
  */
 const router = require('express').Router();
 const { products } = require('../db/helpers.js');
