@@ -1,4 +1,7 @@
-
+/* TODO
+ * Add URL queries for sorting
+ * Add URL params for product IDs
+ */
 const router = require('express').Router();
 const { products } = require('../db/helpers.js');
 
