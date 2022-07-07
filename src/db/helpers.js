@@ -88,7 +88,9 @@ const deleteUserById = async (id) => {
 const getProductById = async (id) => {
   try {
     const { rows } = await query(
-      'SELECT * FROM products WHERE id = $1',
+      'SELECT products.id, username, products.name, description, \
+      price, currency, stock, listed_at FROM products \
+      JOIN users ON user_id = users.id WHERE id = $1',
       [id]
     );
     return rows[0] || null;
@@ -98,9 +100,10 @@ const getProductById = async (id) => {
 };
 
 const getProductsByKeyword = async (word, column = 'price', sort = 'asc') => {
-  let queryString = 'SELECT * FROM products \
-      WHERE name ILIKE $1 OR description ILIKE $1 \
-      ORDER BY $2';
+  let queryString = 'SELECT products.id, username, products.name, description, \
+      price, currency, stock, listed_at FROM products \
+      JOIN users ON user_id = users.id \
+      WHERE name ILIKE $1 OR description ILIKE $1 ORDER BY $2';
   if (sort.toLowerCase() === 'asc') queryString += ' ASC';
   if (sort.toLowerCase() === 'desc') queryString += ' DESC';
   try {
@@ -121,8 +124,10 @@ const getProductsByUser = async (username) => {
       throw new Error('Can\'t find username');
     }
     const { rows } = await query(
-      'SELECT * FROM products WHERE user_id = $1 \
-      ORDER BY listed_at DESC',
+      'SELECT products.id, username, products.name, description, \
+      price, currency, stock, listed_at FROM products \
+      JOIN users ON user_id = users.id \
+      WHERE user_id = $1 ORDER BY listed_at DESC',
       [user.id]
     );
     return rows || null;
@@ -132,7 +137,9 @@ const getProductsByUser = async (username) => {
 };
 
 const getProducts = async (column = 'price', sort = 'asc') => {
-  let queryString = 'SELECT * FROM products ORDER BY $1';
+  let queryString = 'SELECT products.id, username, products.name, description, \
+      price, currency, stock, listed_at FROM products \
+      JOIN users ON user_id = users.id ORDER BY $1';
   if (sort.toLowerCase() === 'asc') queryString += ' ASC';
   if (sort.toLowerCase() === 'desc') queryString += ' DESC';
   try {
