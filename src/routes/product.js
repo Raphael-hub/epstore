@@ -8,46 +8,29 @@ const {checkUserOwnsProduct} = require('../utils/userOwns.js')
 
 // get all products
 // ***** check getProducts below --not sure I used the correct parameters see big comment above,
-router.get('/',  async (req, res, next) => {
-  const {column, sort} = req.body
+router.get('/', async (req, res, next) => {
+  // naming here is just easier for someone to understand
+  // if these are not present they will evaluate to undefined
+  // when you pass undefined args into a function with default values
+  // the default values will be used
+  const { keyword, orderBy, sort } = req.query;
   try {
-    const  allProducts = await products.getProducts(column, sort);
-   
-    return res.status(200).json({ product: allProducts });
+    let listings = [];
+    // normally I don't use else statements but here it comes in handy so
+    // we dont have to write the return and error statements twice
+    if (keyword) {
+      listings = await products.getProductsByKeyword(keyword, orderBy, sort);
+    } else {
+      listings = await products.getProducts(orderBy, sort);
+    }
+    if (!listings) {
+      return next({ message: 'Error fetching products' });
+    }
+    return res.status(200).json({ products: listings });
   } catch (err) {
     return next(err);
   }
 });
-
-//get one product by Id
-router.get('/:id',  async (req, res, next) => {
-    const {product_id} = parseInt(req.params.id);
-    try {
-      const  product = await products.getProductById(product_id);
-      if (product.length === 0) {
-        return res.status(200).json({ info: 'Product not availabe' });
-      }
-      return res.status(200).json({ product: product });
-    } catch (err) {
-      return next(err);
-    }
-  });
-
-  // get one product by name
-
-  router.get('/:name', async (req, res, next) => {
-    const {column, sort} = req.body;
-    const {product_name} = req.params.id;
-    try {
-      const  product = await products.getProductsByName(product_name, column, sort);
-      if (product.length === 0) {
-        return res.status(200).json({ info: 'Product not availabe' });
-      }
-      return res.status(200).json({ product: product });
-    } catch (err) {
-      return next(err);
-    }
-  });
 
 
 

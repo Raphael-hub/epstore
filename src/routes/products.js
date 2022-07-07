@@ -23,6 +23,43 @@ router.get('/', isLoggedIn, async (req, res, next) => {
     }
   });
 
+router.get('/', async (req, res, next)=> {
+   const {query} = req.query;
+   try {
+    if (Object.keys(query).length ===0) {
+      const product = await products.getProducts();
+      return res.status(200).json({product: product});
+
+     } else if (query.column || query.sort) {
+      const product = await products.getProducts(query.column, query.sort);
+      return res.status(200).json({product: product});
+
+      } else if (query.keyword) {
+        const product = await products.getProductsByKeyword(query.keyword, query.column, query.sort);
+        return res.status(200).json({product: product});
+
+      }
+     
+   } catch (err) {
+    return next(err);
+   }
+  
+
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // get one product by name
 // *****check getProductsByName --not sure if I should enter (column, sort) as parameters
 // since you e.g. gave default column value 'listed_at', yet you have code that checks if the column is empty,
