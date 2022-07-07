@@ -1,3 +1,9 @@
+CREATE TYPE "account_role" AS ENUM (
+  'general',
+  'moderator',
+  'admin'
+);
+
 CREATE TYPE "currencies" AS ENUM (
   'gbp',
   'eur',
@@ -18,6 +24,7 @@ CREATE TABLE "users" (
   "email" varchar(60) UNIQUE NOT NULL,
   "name" varchar NOT NULL,
   "address" varchar,
+  "role" account_role DEFAULT 'general',
   "created_at" timestamp NOT NULL
 );
 
