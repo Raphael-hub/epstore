@@ -310,7 +310,7 @@ const createOrderFromCart = async (user_id) => {
       throw new Error('User does not exist');
     }
     const cart = await getUserCart(user_id);
-    if (!cart) {
+    if (cart.length === 0) {
       throw new Error('Cart is empty');
     }
     await client.query('BEGIN');
@@ -321,13 +321,13 @@ const createOrderFromCart = async (user_id) => {
       [user_id, date.toISOString()]
     );
     let products = [];
-    cart.forEach(i => {
-      const item = await client.query(
+    cart.forEach(async (i) => {
+      const res = await client.query(
         'INSERT INTO orders_products (order_id, product_id, quantity) \
         VALUES ($1, $2, $3) RETURNING product_id, quantity',
         [order.rows[0].id, i.product_id, i.quantity]
       );
-      products.push(item);
+      products.push(res.rows[0]);
     });
     await client.query('COMMIT');
     return { order: order.rows[0], products };
