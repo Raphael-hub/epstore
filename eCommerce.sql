@@ -12,7 +12,7 @@ CREATE TYPE "currencies" AS ENUM (
 
 CREATE TYPE "order_status" AS ENUM (
   'pending',
-  'out_for_delivery',
+  'shipped',
   'fulfilled',
   'cancelled'
 );
