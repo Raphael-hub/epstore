@@ -28,7 +28,8 @@ router.post('/', isLoggedIn, async (req, res, next) => {
   try {
     const insert = await product.createProduct(product);
     if (!insert) {
-      return next({ message: 'Unable to add product' });
+      
+      return next({ message: 'Error creating product' });
     }
     return res.status(201).json({ product: insert });
   } catch (err) {
@@ -39,7 +40,7 @@ router.post('/', isLoggedIn, async (req, res, next) => {
 
 router.put('/:id', isLoggedIn, checkUserOwnsProduct, async (req, res, next) => {
   const { product_id } = req.params.id;
-  const { updates } = req.body;
+  const  updates  = req.body;
   
   try {
     const product = await products.getProductById(product_id);
@@ -52,10 +53,7 @@ router.put('/:id', isLoggedIn, checkUserOwnsProduct, async (req, res, next) => {
     if (mergedProduct.quantity < 1) {
       return res.status(400).json({ error: 'Cannot set quantity to less than 1' });
     }
-    // new updated object.quantity > 0
-    if ( updates.quantity < 1) {
-      return next({ message: 'Not enough stock' });
-    }
+    
     const updated = await products.updateProductById(req.user.id, product_id, updates);
     if (!updated) {
       return next({ message: 'Error updating product' });
