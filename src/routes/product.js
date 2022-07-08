@@ -28,7 +28,9 @@ router.get('/', async (req, res, next) => {
     }
     return res.status(200).json({ products: listings });
   } catch (err) {
-    return res.json({error: something up})
+    console.log(err);
+    return next(err);
+    
     
   }
 });
