@@ -383,6 +383,11 @@ const createOrderFromCart = async (user_id) => {
         VALUES ($1, $2, $3) RETURNING product_id, quantity',
         [order.rows[0].id, i.product_id, i.quantity]
       );
+      await client.query(
+        'UPDATE products SET stock = stock - $1 \
+        WHERE id = $2',
+        [i.quantity, i.product_id]
+      );
       products.push(res.rows[0]);
     });
     await client.query('COMMIT');
@@ -415,6 +420,11 @@ const createOrderFromProduct = async (user_id, product_id, quantity) => {
       'INSERT INTO orders_products (order_id, product_id, quantity) \
       VALUES ($1, $2, $3) RETURNING product_id, quantity',
       [order.rows[0].id, product_id, quantity]
+    );
+    await client.query(
+      'UPDATE products SET stock = stock - $1 \
+      WHERE id = $2',
+      [quantity, product_id]
     );
     await client.query('COMMIT');
     return { order: order.rows[0], products: items.rows[0] };
