@@ -303,6 +303,62 @@ const emptyUserCart = async (user_id) => {
   }
 };
 
+const getOrderById = async (user_id, order_id) => {
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
+    const { rows } = await query(
+      'SELECT id, status, created_at FROM orders \
+      WHERE id = $1 AND user_id = $2',
+      [order_id, user_id]
+    );
+    return rows[0] || null;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getOrdersByUser = async (user_id) => {
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
+    const { rows } = await query(
+      'SELECT id, status, created_at FROM orders \
+      WHERE user_id = $1',
+      [user_id]
+    );
+    return rows || null;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getOrderProductsFromOrder = async (user_id, order_id) => {
+  try {
+    const order = await getOrderById(user_id, order_id);
+    if (!order) {
+      throw new Error('Unable to find order');
+    }
+    const { rows } = await query(
+      'SELECT product_id, quantity FROM orders_products \
+      WHERE order_id = $1',
+      [order_id]
+    );
+    return {
+      order: {
+        id: order.id,
+        status: order.status,
+        created_at: order.created_at
+      },
+      products: rows
+    };
+  } catch (err) {
+    throw err;
+  }
+};
+
 const createOrderFromCart = async (user_id) => {
   const client = await getClient();
   try {
@@ -396,6 +452,9 @@ module.exports = {
     emptyUserCart,
   },
   orders: {
+    getOrderById,
+    getOrdersByUser,
+    getOrderProductsFromOrder,
     createOrderFromCart,
     createOrderFromProduct,
   },
