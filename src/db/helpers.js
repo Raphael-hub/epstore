@@ -376,22 +376,29 @@ const createOrderFromCart = async (user_id) => {
       VALUES ($1, $2) RETURNING id, status, created_at',
       [user_id, date.toISOString()]
     );
-    let products = [];
-    cart.forEach(async (i) => {
+    let items = [];
+    for (let i = 0; i < cart.length; i++) {
+      let product = await getProductById(cart[i].product_id);
+      if (!product) {
+        throw new Error('Product does not exist');
+      }
+      if (product.stock - cart[i].quantity < 0) {
+        throw new Error('Product does not have enough stock');
+      }
       const res = await client.query(
         'INSERT INTO orders_products (order_id, product_id, quantity) \
         VALUES ($1, $2, $3) RETURNING product_id, quantity',
-        [order.rows[0].id, i.product_id, i.quantity]
+        [order.rows[0].id, cart[i].product_id, cart[i].quantity]
       );
       await client.query(
         'UPDATE products SET stock = stock - $1 \
         WHERE id = $2',
-        [i.quantity, i.product_id]
+        [cart[i].quantity, cart[i].product_id]
       );
-      products.push(res.rows[0]);
-    });
+      items.push(res.rows[0]);
+    }
     await client.query('COMMIT');
-    return { order: order.rows[0], products };
+    return { order: order.rows[0], products: items };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
@@ -406,8 +413,12 @@ const createOrderFromProduct = async (user_id, product_id, quantity) => {
     if (!await getUserById(user_id)) {
       throw new Error('User does not exist');
     }
-    if (!await getProductById(product_id)) {
+    const product = await getProductById(product_id);
+    if (!product) {
       throw new Error('Product does not exist');
+    }
+    if (product.stock - quantity < 0) {
+      throw new Error('Product does not have enough stock');
     }
     await client.query('BEGIN');
     const date = new Date();
