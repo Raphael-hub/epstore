@@ -2,26 +2,26 @@ const router = require('express').Router();
 const { orders } = require('../db/helpers.js');
 const { isLoggedIn } = require('../utils/loggedIn.js');
 
-router.post('/', isLoggedIn, async (req, res, next) => {
+router.get('/', isLoggedIn, async (req, res, next) => {
   try {
-    const order = await orders.createOrderFromCart(req.user.id);
-    if (!order) {
-      return next({ message: 'Error creating order' });
+    const results = await orders.getOrdersByUser(req.user.id);
+    if (!results) {
+      return next({ message: 'Error fetching orders' });
     }
-    return res.status(201).json(order);
+    return res.status(200).json({ orders: results });
   } catch (err) {
     return next(err);
   }
 });
 
-router.post('/:product_id', isLoggedIn, async (req, res, next) => {
-  const product_id = parseInt(req.params.product_id);
+router.get('/:order_id', isLoggedIn, async (req, res, next) => {
+  const id = parseInt(req.params.order_id);
   try {
-    const order = await orders.createOrderFromProduct(req.user.id, product_id, 2);
+    const order = await orders.getOrderProductsFromOrder(req.user.id, id);
     if (!order) {
-      return next({ message: 'Error creating order' });
+      return next({ message: 'Error fetching order details' });
     }
-    return res.status(201).json(order);
+    return res.status(200).json(order);
   } catch (err) {
     return next(err);
   }
