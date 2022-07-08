@@ -453,15 +453,37 @@ const cancelOrder = async (user_id, order_id) => {
     if (!await getUserById(user_id)) {
       throw new Error('User does not exist');
     }
-    if (!await getOrderById(user_id, order_id)) {
+    const order = await getOrderById(user_id, order_id);
+    if (!order) {
       throw new Error('Unable to find order');
+    }
+    if (order.status === 'cancelled') {
+      throw new Error('Order already cancelled');
+    }
+    if (order.status !== 'pending') {
+      throw new Error('Can\'t cancel an order being processed');
     }
     await client.query('BEGIN');
     const { rows } = await client.query(
-      'UPDATE orders SET status = \'cancelled\' \
-      WHERE user_id = $1 AND id = $2 RETURNING id, status, created_at',
+      "UPDATE orders SET status = 'cancelled' \
+      WHERE user_id = $1 AND id = $2 RETURNING id, status, created_at",
       [user_id, order_id]
     );
+    const items = await client.query(
+      'SELECT * FROM orders_products WHERE order_id = $1',
+      [order_id]
+    );
+    for (let i = 0; i < items.rows.length; i++) {
+      let product = await getProductById(items.rows[i].product_id);
+      if (!product) {
+        throw new Error('Product does not exist');
+      }
+      await client.query(
+        'UPDATE products SET stock = stock + $1 \
+        WHERE id = $2',
+        [items.rows[i].quantity, items.rows[i].product_id]
+      );
+    }
     await client.query('COMMIT');
     return rows || null;
   } catch (err) {
