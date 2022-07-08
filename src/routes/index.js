@@ -5,6 +5,7 @@ const profile = require('./profile.js');
 const products = require('./products.js');
 const cart = require('./cart.js');
 const orders = require('./orders.js');
+const checkout = require('./checkout.js');
 
 module.exports = app => {
   app.use('/register', register);
@@ -14,4 +15,5 @@ module.exports = app => {
   app.use('/products', products);
   app.use('/cart', cart);
   app.use('/orders', orders);
+  app.use('/checkout', checkout);
 };
