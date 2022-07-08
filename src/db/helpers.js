@@ -1,4 +1,4 @@
-const { query } = require('./index.js');
+const { query, getClient } = require('./index.js');
 
 const getUserById = async (id) => {
   try {
@@ -90,7 +90,7 @@ const getProductById = async (id) => {
     const { rows } = await query(
       'SELECT products.id, username, products.name, description, \
       price, currency, stock, listed_at FROM products \
-      JOIN users ON user_id = users.id WHERE id = $1',
+      JOIN users ON user_id = users.id WHERE products.id = $1',
       [id]
     );
     return rows[0] || null;
@@ -103,7 +103,7 @@ const getProductsByKeyword = async (word, column = 'price', sort = 'asc') => {
   let queryString = 'SELECT products.id, username, products.name, description, \
       price, currency, stock, listed_at FROM products \
       JOIN users ON user_id = users.id \
-      WHERE name ILIKE $1 OR description ILIKE $1 ORDER BY $2';
+      WHERE products.name ILIKE $1 OR description ILIKE $1 ORDER BY $2';
   if (sort.toLowerCase() === 'asc') queryString += ' ASC';
   if (sort.toLowerCase() === 'desc') queryString += ' DESC';
   try {
@@ -303,6 +303,73 @@ const emptyUserCart = async (user_id) => {
   }
 };
 
+const createOrderFromCart = async (user_id) => {
+  const client = await getClient();
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
+    const cart = await getUserCart(user_id);
+    if (!cart) {
+      throw new Error('Cart is empty');
+    }
+    await client.query('BEGIN');
+    const date = new Date();
+    const order = await client.query(
+      'INSERT INTO orders (user_id, created_at) \
+      VALUES ($1, $2) RETURNING id, status, created_at',
+      [user_id, date.toISOString()]
+    );
+    let products = [];
+    cart.forEach(i => {
+      const item = await client.query(
+        'INSERT INTO orders_products (order_id, product_id, quantity) \
+        VALUES ($1, $2, $3) RETURNING product_id, quantity',
+        [order.rows[0].id, i.product_id, i.quantity]
+      );
+      products.push(item);
+    });
+    await client.query('COMMIT');
+    return { order: order.rows[0], products };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
+const createOrderFromProduct = async (user_id, product_id, quantity) => {
+  const client = await getClient();
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
+    if (!await getProductById(product_id)) {
+      throw new Error('Product does not exist');
+    }
+    await client.query('BEGIN');
+    const date = new Date();
+    const order = await client.query(
+      'INSERT INTO orders (user_id, created_at) \
+      VALUES ($1, $2) RETURNING id, status, created_at',
+      [user_id, date.toISOString()]
+    );
+    const items = await client.query(
+      'INSERT INTO orders_products (order_id, product_id, quantity) \
+      VALUES ($1, $2, $3) RETURNING product_id, quantity',
+      [order.rows[0].id, product_id, quantity]
+    );
+    await client.query('COMMIT');
+    return { order: order.rows[0], products: items.rows[0] };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   users: {
     getUserById,
@@ -327,5 +394,9 @@ module.exports = {
     updateProductInCart,
     removeProductFromCart,
     emptyUserCart,
+  },
+  orders: {
+    createOrderFromCart,
+    createOrderFromProduct,
   },
 };
