@@ -16,8 +16,9 @@ router.post('/', isLoggedIn, async (req, res, next) => {
 
 router.post('/:product_id', isLoggedIn, async (req, res, next) => {
   const product_id = parseInt(req.params.product_id);
+  const quantity = req.body.quantity;
   try {
-    const order = await orders.createOrderFromProduct(req.user.id, product_id, 2);
+    const order = await orders.createOrderFromProduct(req.user.id, product_id, quantity);
     if (!order) {
       return next({ message: 'Error creating order' });
     }
