@@ -447,6 +447,31 @@ const createOrderFromProduct = async (user_id, product_id, quantity) => {
   }
 };
 
+const cancelOrder = async (user_id, order_id) => {
+  const client = await getClient();
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
+    if (!await getOrderById(user_id, order_id)) {
+      throw new Error('Unable to find order');
+    }
+    await client.query('BEGIN');
+    const { rows } = await client.query(
+      'UPDATE orders SET status = \'cancelled\' \
+      WHERE user_id = $1 AND id = $2 RETURNING id, status, created_at',
+      [user_id, order_id]
+    );
+    await client.query('COMMIT');
+    return rows || null;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   users: {
     getUserById,
@@ -478,5 +503,6 @@ module.exports = {
     getOrderProductsFromOrder,
     createOrderFromCart,
     createOrderFromProduct,
+    cancelOrder,
   },
 };
