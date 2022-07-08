@@ -1,4 +1,4 @@
-const { query } = require('./index.js');
+const { query, getClient } = require('./index.js');
 
 const getUserById = async (id) => {
   try {
@@ -90,7 +90,7 @@ const getProductById = async (id) => {
     const { rows } = await query(
       'SELECT products.id, username, products.name, description, \
       price, currency, stock, listed_at FROM products \
-      JOIN users ON user_id = users.id WHERE id = $1',
+      JOIN users ON user_id = users.id WHERE products.id = $1',
       [id]
     );
     return rows[0] || null;
@@ -103,7 +103,7 @@ const getProductsByKeyword = async (word, column = 'price', sort = 'asc') => {
   let queryString = 'SELECT products.id, username, products.name, description, \
       price, currency, stock, listed_at FROM products \
       JOIN users ON user_id = users.id \
-      WHERE name ILIKE $1 OR description ILIKE $1 ORDER BY $2';
+      WHERE products.name ILIKE $1 OR description ILIKE $1 ORDER BY $2';
   if (sort.toLowerCase() === 'asc') queryString += ' ASC';
   if (sort.toLowerCase() === 'desc') queryString += ' DESC';
   try {
@@ -303,6 +303,150 @@ const emptyUserCart = async (user_id) => {
   }
 };
 
+const getOrderById = async (user_id, order_id) => {
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
+    const { rows } = await query(
+      'SELECT id, status, created_at FROM orders \
+      WHERE id = $1 AND user_id = $2',
+      [order_id, user_id]
+    );
+    return rows[0] || null;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getOrdersByUser = async (user_id) => {
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
+    const { rows } = await query(
+      'SELECT id, status, created_at FROM orders \
+      WHERE user_id = $1',
+      [user_id]
+    );
+    return rows || null;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getOrderProductsFromOrder = async (user_id, order_id) => {
+  try {
+    const order = await getOrderById(user_id, order_id);
+    if (!order) {
+      throw new Error('Unable to find order');
+    }
+    const { rows } = await query(
+      'SELECT product_id, quantity FROM orders_products \
+      WHERE order_id = $1',
+      [order_id]
+    );
+    return {
+      order: {
+        id: order.id,
+        status: order.status,
+        created_at: order.created_at
+      },
+      products: rows
+    };
+  } catch (err) {
+    throw err;
+  }
+};
+
+const createOrderFromCart = async (user_id) => {
+  const client = await getClient();
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
+    const cart = await getUserCart(user_id);
+    if (cart.length === 0) {
+      throw new Error('Cart is empty');
+    }
+    await client.query('BEGIN');
+    const date = new Date();
+    const order = await client.query(
+      'INSERT INTO orders (user_id, created_at) \
+      VALUES ($1, $2) RETURNING id, status, created_at',
+      [user_id, date.toISOString()]
+    );
+    let items = [];
+    for (let i = 0; i < cart.length; i++) {
+      let product = await getProductById(cart[i].product_id);
+      if (!product) {
+        throw new Error('Product does not exist');
+      }
+      if (product.stock - cart[i].quantity < 0) {
+        throw new Error('Product does not have enough stock');
+      }
+      const res = await client.query(
+        'INSERT INTO orders_products (order_id, product_id, quantity) \
+        VALUES ($1, $2, $3) RETURNING product_id, quantity',
+        [order.rows[0].id, cart[i].product_id, cart[i].quantity]
+      );
+      await client.query(
+        'UPDATE products SET stock = stock - $1 \
+        WHERE id = $2',
+        [cart[i].quantity, cart[i].product_id]
+      );
+      items.push(res.rows[0]);
+    }
+    await client.query('COMMIT');
+    return { order: order.rows[0], products: items };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
+const createOrderFromProduct = async (user_id, product_id, quantity) => {
+  const client = await getClient();
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
+    const product = await getProductById(product_id);
+    if (!product) {
+      throw new Error('Product does not exist');
+    }
+    if (product.stock - quantity < 0) {
+      throw new Error('Product does not have enough stock');
+    }
+    await client.query('BEGIN');
+    const date = new Date();
+    const order = await client.query(
+      'INSERT INTO orders (user_id, created_at) \
+      VALUES ($1, $2) RETURNING id, status, created_at',
+      [user_id, date.toISOString()]
+    );
+    const items = await client.query(
+      'INSERT INTO orders_products (order_id, product_id, quantity) \
+      VALUES ($1, $2, $3) RETURNING product_id, quantity',
+      [order.rows[0].id, product_id, quantity]
+    );
+    await client.query(
+      'UPDATE products SET stock = stock - $1 \
+      WHERE id = $2',
+      [quantity, product_id]
+    );
+    await client.query('COMMIT');
+    return { order: order.rows[0], products: items.rows[0] };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   users: {
     getUserById,
@@ -327,5 +471,12 @@ module.exports = {
     updateProductInCart,
     removeProductFromCart,
     emptyUserCart,
+  },
+  orders: {
+    getOrderById,
+    getOrdersByUser,
+    getOrderProductsFromOrder,
+    createOrderFromCart,
+    createOrderFromProduct,
   },
 };
