@@ -153,11 +153,11 @@ const getProducts = async (column = 'price', sort = 'asc') => {
   }
 };
 
-const createProduct = async (product) => {
+const createProduct = async (user_id, product) => {
   if (!product.currency) {
     product.currency = 'gbp';
   }
-  const { user_id, name, description, price, currency, stock } = product;
+  const { name, description, price, currency, stock } = product;
   const date = new Date();
   try {
     const { rows } = await query(

@@ -24,11 +24,9 @@ router.get('/', async (req, res, next) => {
 });
 
 router.post('/', isLoggedIn, async (req, res, next) => {
-  const product = { ...req.body, user_id: req.user.id};
   try {
-    const insert = await product.createProduct(product);
+    const insert = await product.createProduct(req.user.id, req.body);
     if (!insert) {
-      
       return next({ message: 'Error creating product' });
     }
     return res.status(201).json({ product: insert });
@@ -41,19 +39,15 @@ router.post('/', isLoggedIn, async (req, res, next) => {
 router.put('/:id', isLoggedIn, checkUserOwnsProduct, async (req, res, next) => {
   const { product_id } = req.params.id;
   const  updates  = req.body;
-  
   try {
     const product = await products.getProductById(product_id);
     if (!product) {
       return next({ message: 'Error fetching product' });
     }
-    // this merges the new state
     const mergedProduct = { ...product, ...updates };
-    // check quantity is > 0
     if (mergedProduct.quantity < 1) {
       return res.status(400).json({ error: 'Cannot set quantity to less than 1' });
     }
-    
     const updated = await products.updateProductById(req.user.id, product_id, updates);
     if (!updated) {
       return next({ message: 'Error updating product' });
