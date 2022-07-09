@@ -33,6 +33,30 @@ const getUserByEmail = async (email) => {
   }
 };
 
+const getVendorOrders = async (user_id) => {
+  try {
+    const { rows } = await query(
+      'WITH orders_products_seller AS ( \
+      SELECT order_id, product_id, quantity, status AS product_status, \
+      user_id AS seller_id \
+      FROM orders_products \
+      JOIN products ON product_id = products.id \
+      ) \
+      SELECT order_id, users.username AS buyer_username, name AS buyer_name, \
+      address AS buyer_address, orders.status AS order_status, product_id, \
+      quantity, product_status \
+      FROM orders_products_seller \
+      JOIN orders ON order_id = orders.id \
+      JOIN users ON orders.user_id = users.id \
+      WHERE seller_id = $1',
+      [user_id]
+    );
+    return rows || null;
+  } catch (err) {
+    throw err;
+  }
+};
+
 const createUser = async (user) => {
   const { username, password, email, name, address } = user;
   const date = new Date();
@@ -504,6 +528,11 @@ const cancelOrder = async (user_id, order_id) => {
         WHERE id = $2',
         [items.rows[i].quantity, items.rows[i].product_id]
       );
+      await client.query(
+        'UPDATE orders_products SET status = \'cancelled\' \
+        WHERE product_id = $1',
+        [items.rows[i].product_id]
+      );
     }
     await client.query('COMMIT');
     return rows || null;
@@ -520,6 +549,7 @@ module.exports = {
     getUserById,
     getUserByUsername,
     getUserByEmail,
+    getVendorOrders,
     createUser,
     updateUserById,
     deleteUserById,
