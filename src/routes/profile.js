@@ -4,8 +4,17 @@ const _ = require('lodash');
 const { users, products } = require('../db/helpers.js');
 const { isLoggedIn } = require('../utils/loggedIn.js');
 
-router.get('/', isLoggedIn, (req, res, next) => {
-  return res.status(200).json({ user: _.omit(req.user, ['id', 'password']) });
+router.get('/', isLoggedIn, async (req, res, next) => {
+  try {
+    const orders = await users.getVendorOrders(req.user.id);
+    const response = {
+      user: _.omit(req.user, ['id', 'password'])
+    };
+    if (orders.length > 0) response.orders = orders
+    return res.status(200).json(response);
+  } catch (err) {
+    return next(err);
+  }
 });
 
 router.delete('/', isLoggedIn, async (req, res, next) => {

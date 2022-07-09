@@ -33,6 +33,30 @@ const getUserByEmail = async (email) => {
   }
 };
 
+const getVendorOrders = async (user_id) => {
+  try {
+    const { rows } = await query(
+      'WITH orders_products_seller AS ( \
+      SELECT order_id, product_id, quantity, status AS product_status, \
+      user_id AS seller_id \
+      FROM orders_products \
+      JOIN products ON product_id = products.id \
+      ) \
+      SELECT order_id, users.username AS buyer_username, name AS buyer_name, \
+      address AS buyer_address, orders.status AS order_status, product_id, \
+      quantity, product_status \
+      FROM orders_products_seller \
+      JOIN orders ON order_id = orders.id \
+      JOIN users ON orders.user_id = users.id \
+      WHERE seller_id = $1',
+      [user_id]
+    );
+    return rows || null;
+  } catch (err) {
+    throw err;
+  }
+};
+
 const createUser = async (user) => {
   const { username, password, email, name, address } = user;
   const date = new Date();
@@ -97,18 +121,37 @@ const getProductById = async (id) => {
   }
 };
 
+const getQueryString = async (tablename, column, sort) => {
+  try {
+    const { rows } = await query(
+      'SELECT column_name FROM information_schema.columns \
+      WHERE table_name = $1',
+      [tablename]
+    );
+    let queryString = ' ORDER BY';
+    const columnName = rows.find(i => i.column_name === column);
+    if (!columnName) {
+      queryString += ' price';
+    } else {
+      queryString += ` ${columnName.column_name}`;
+    }
+    if (sort.toLowerCase() === 'asc') queryString += ' ASC';
+    if (sort.toLowerCase() === 'desc') queryString += ' DESC';
+    return queryString;
+  } catch (err) {
+    throw err;
+  }
+};
+
 const getProductsByKeyword = async (word, column = 'price', sort = 'asc') => {
   let queryString = 'SELECT products.id, username, products.name, description, \
       price, currency, stock, listed_at FROM products \
       JOIN users ON user_id = users.id \
-      WHERE products.name ILIKE $1 OR description ILIKE $1 ORDER BY $2';
-  if (sort.toLowerCase() === 'asc') queryString += ' ASC';
-  if (sort.toLowerCase() === 'desc') queryString += ' DESC';
+      WHERE products.name ILIKE $1 OR description ILIKE $1';
   try {
-    const { rows } = await query(
-      queryString,
-      [`%${word.toLowerCase()}%`, column]
-    );
+    const extraString = await getQueryString('products', column, sort);
+    queryString += extraString;
+    const { rows } = await query(queryString, [`%${word.toLowerCase()}%`]);
     return rows || null;
   } catch (err) {
     throw err;
@@ -137,14 +180,11 @@ const getProductsByUser = async (username) => {
 const getProducts = async (column = 'price', sort = 'asc') => {
   let queryString = 'SELECT products.id, username, products.name, description, \
       price, currency, stock, listed_at FROM products \
-      JOIN users ON user_id = users.id ORDER BY $1';
-  if (sort.toLowerCase() === 'asc') queryString += ' ASC';
-  if (sort.toLowerCase() === 'desc') queryString += ' DESC';
+      JOIN users ON user_id = users.id';
   try {
-    const { rows } = await query(
-      queryString,
-      [column]
-    );
+    const extraString = await getQueryString('products', column, sort);
+    queryString += extraString;
+    const { rows } = await query(queryString);
     return rows || null;
   } catch (err) {
     throw err;
@@ -217,7 +257,8 @@ const getUserCart = async (user_id) => {
       throw new Error('User does not exist');
     }
     const { rows } = await query(
-      'SELECT product_id, quantity FROM users_carts WHERE user_id = $1',
+      'SELECT product_id, quantity FROM users_carts \
+      WHERE user_id = $1',
       [user_id]
     );
     return rows || null;
@@ -257,7 +298,8 @@ const updateProductInCart = async (user_id, product_id, quantity) => {
     const { rows } = await query(
       'UPDATE users_carts \
       SET quantity = $1 \
-      WHERE user_id = $2 AND product_id = $3 RETURNING product_id, quantity',
+      WHERE user_id = $2 AND product_id = $3 \
+      RETURNING product_id, quantity',
       [quantity, user_id, product_id]
     );
     return rows[0] || null;
@@ -340,8 +382,8 @@ const getOrderProductsFromOrder = async (user_id, order_id) => {
       throw new Error('Unable to find order');
     }
     const { rows } = await query(
-      'SELECT product_id, quantity FROM orders_products \
-      WHERE order_id = $1',
+      'SELECT product_id, quantity, status \
+      FROM orders_products WHERE order_id = $1',
       [order_id]
     );
     return {
@@ -432,7 +474,7 @@ const createOrderFromProduct = async (user_id, product_id, quantity) => {
     );
     const items = await client.query(
       'INSERT INTO orders_products (order_id, product_id, quantity) \
-      VALUES ($1, $2, $3) RETURNING product_id, quantity',
+      VALUES ($1, $2, $3) RETURNING product_id, quantity, status',
       [order.rows[0].id, product_id, quantity]
     );
     await client.query(
@@ -486,6 +528,11 @@ const cancelOrder = async (user_id, order_id) => {
         WHERE id = $2',
         [items.rows[i].quantity, items.rows[i].product_id]
       );
+      await client.query(
+        'UPDATE orders_products SET status = \'cancelled\' \
+        WHERE product_id = $1',
+        [items.rows[i].product_id]
+      );
     }
     await client.query('COMMIT');
     return rows || null;
@@ -502,6 +549,7 @@ module.exports = {
     getUserById,
     getUserByUsername,
     getUserByEmail,
+    getVendorOrders,
     createUser,
     updateUserById,
     deleteUserById,

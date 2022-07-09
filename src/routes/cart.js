@@ -18,7 +18,11 @@ router.get('/', isLoggedIn, async (req, res, next) => {
 router.post('/', isLoggedIn, async (req, res, next) => {
   const { product_id, quantity } = req.body;
   try {
-    if ((await getProductStock(product_id) - quantity) < 0) {
+    const productStock = await getProductStock(product_id);
+    if (productStock === -1) {
+      return next({ message: 'Product not found' });
+    }
+    if ((productStock - quantity) < 0) {
       return next({ message: 'Not enough stock' });
     }
     const cart = await carts.getUserCart(req.user.id);
@@ -39,16 +43,18 @@ router.post('/', isLoggedIn, async (req, res, next) => {
 router.put('/', isLoggedIn, async (req, res, next) => {
   const { product_id, quantity } = req.body;
   try {
-    if ((await getProductStock(product_id) - quantity) < 0) {
+    const productStock = await getProductStock(product_id);
+    if (productStock === -1) {
+      return next({ message: 'Product not found' });
+    }
+    if ((productStock - quantity) < 0) {
       return next({ message: 'Not enough stock' });
     }
     const updated = await carts.updateProductInCart(req.user.id, product_id, quantity);
     if (!updated) {
       return next({ message: 'Error updating quantity' });
     }
-    return res.status(200).json({
-      info: `Updated product ${product_id} to new quantity of ${quantity}`
-    });
+    return res.redirect('/cart');
   } catch(err) {
     return next(err);
   }
@@ -62,7 +68,7 @@ router.delete('/', isLoggedIn, async (req, res, next) => {
       return next({ message: 'Error removing product from cart' });
     }
     return res.status(200).json({
-      info: `Removed product ${product_id} from cart`
+      info: `Removed product from cart`
     });
   } catch (err) {
     return next(err);

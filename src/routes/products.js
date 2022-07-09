@@ -3,7 +3,7 @@ const { products } = require('../db/helpers.js');
 const _ = require('lodash');
 const { isLoggedIn } = require('../utils/loggedIn.js');
 const { isInStock, getProductStock } = require('../utils/inStock.js');
-const checkUserOwnsProduct = require('../utils/userOwns.js');
+const checkUserOwnsProduct  = require('../utils/userOwns.js');
 
 router.get('/', async (req, res, next) => {
   const { keyword, orderBy, sort } = req.query;
@@ -36,7 +36,7 @@ router.post('/', isLoggedIn, async (req, res, next) => {
 });
 
 
-router.put('/:id', isLoggedIn, checkUserOwnsProduct, async (req, res, next) => {
+router.put('/:product_id', isLoggedIn, checkUserOwnsProduct, async (req, res, next) => {
   const product_id = res.locals.product.id;
   const updates = req.body;
   try {
@@ -56,7 +56,7 @@ router.put('/:id', isLoggedIn, checkUserOwnsProduct, async (req, res, next) => {
 });
 
 
-router.delete('/:id', isLoggedIn, checkUserOwnsProduct, async (req, res, next) => {
+router.delete('/:product_id', isLoggedIn, checkUserOwnsProduct, async (req, res, next) => {
   const product_id = res.locals.product.id;
   try {
     const result = await products.deleteProductById(req.user.id, product_id);
