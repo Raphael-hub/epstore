@@ -57,9 +57,9 @@ router.put('/', isLoggedIn, async (req, res, next) => {
 router.delete('/', isLoggedIn, async (req, res, next) => {
   try {
     const { product_id } = req.body;
-    const deleted = await carts.removeProductFromCart(req.user.id, product_id);
-    if (!deleted) {
-      return next({ message: 'Unable to remove product from cart' });
+    const result = await carts.removeProductFromCart(req.user.id, product_id);
+    if (!result) {
+      return next({ message: 'Error removing product from cart' });
     }
     return res.status(200).json({
       info: `Removed product ${product_id} from cart`
@@ -71,9 +71,9 @@ router.delete('/', isLoggedIn, async (req, res, next) => {
 
 router.post('/clear', isLoggedIn, async (req, res, next) => {
   try {
-    const deleted = await carts.emptyUserCart(req.user.id);
-    if (!deleted) {
-      return next({ message: 'Unable to clear cart' });
+    const result = await carts.emptyUserCart(req.user.id);
+    if (!result) {
+      return next({ message: 'Error clearing cart' });
     }
     return res.status(200).json({ info: 'Emptied cart' });
   } catch (err) {

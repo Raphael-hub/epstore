@@ -25,11 +25,11 @@ router.get('/', async (req, res, next) => {
 
 router.post('/', isLoggedIn, async (req, res, next) => {
   try {
-    const insert = await product.createProduct(req.user.id, req.body);
+    const insert = await products.createProduct(req.user.id, req.body);
     if (!insert) {
       return next({ message: 'Error creating product' });
     }
-    return res.status(201).json({ product: insert });
+    return res.status(201).json({ product: _.omit(insert, ['user_id']) });
   } catch (err) {
     return next(err);
   }
@@ -37,18 +37,15 @@ router.post('/', isLoggedIn, async (req, res, next) => {
 
 
 router.put('/:id', isLoggedIn, checkUserOwnsProduct, async (req, res, next) => {
-  const { product_id } = req.params.id;
-  const  updates  = req.body;
+  const product_id = res.locals.product.id;
+  const updates = req.body;
   try {
-    const product = await products.getProductById(product_id);
-    if (!product) {
-      return next({ message: 'Error fetching product' });
-    }
-    const mergedProduct = { ...product, ...updates };
+    const old = res.locals.product;
+    const mergedProduct = { ...old, ...updates };
     if (mergedProduct.quantity < 1) {
       return res.status(400).json({ error: 'Cannot set quantity to less than 1' });
     }
-    const updated = await products.updateProductById(req.user.id, product_id, updates);
+    const updated = await products.updateProductById(req.user.id, product_id, mergedProduct);
     if (!updated) {
       return next({ message: 'Error updating product' });
     }
@@ -60,14 +57,14 @@ router.put('/:id', isLoggedIn, checkUserOwnsProduct, async (req, res, next) => {
 
 
 router.delete('/:id', isLoggedIn, checkUserOwnsProduct, async (req, res, next) => {
-  const { product_id } = req.params.id;
+  const product_id = res.locals.product.id;
   try {
-    const deleted = await products.deleteProductById(product_id);
-    if (!deleted) {
-      return next({ message: 'Unable to remove product' });
+    const result = await products.deleteProductById(req.user.id, product_id);
+    if (!result) {
+      return next({ message: 'Error removing product' });
     }
     return res.status(200).json({
-      info: `Removed product ${product_id} from products`
+      info: `Removed product id: ${product_id}`
     });
   } catch (err) {
     return next(err);

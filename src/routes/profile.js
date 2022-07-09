@@ -10,9 +10,9 @@ router.get('/', isLoggedIn, (req, res, next) => {
 
 router.delete('/', isLoggedIn, async (req, res, next) => {
   try {
-    const deleted = await users.deleteUserById(req.user.id);
-    if (deleted === null) {
-      return next({ message: 'Unable to delete user' });
+    const result = await users.deleteUserById(req.user.id);
+    if (!result) {
+      return next({ message: 'Error deleting user' });
     }
     req.logout(err => {
       if (err) {
