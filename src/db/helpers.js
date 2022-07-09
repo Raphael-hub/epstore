@@ -97,18 +97,23 @@ const getProductById = async (id) => {
   }
 };
 
-const getColumnString = async (tablename, column) => {
+const getQueryString = async (tablename, column, sort) => {
   try {
     const { rows } = await query(
       'SELECT column_name FROM information_schema.columns \
       WHERE table_name = $1',
       [tablename]
     );
-    let columnString;
-    if (rows.filter(i => i.column_name === column)) {
-      columnString = ` ${column}`;
+    let queryString = ' ORDER BY';
+    const columnName = rows.find(i => i.column_name === column);
+    if (!columnName) {
+      queryString += ' price';
+    } else {
+      queryString += ` ${columnName.column_name}`;
     }
-    return columnString;
+    if (sort.toLowerCase() === 'asc') queryString += ' ASC';
+    if (sort.toLowerCase() === 'desc') queryString += ' DESC';
+    return queryString;
   } catch (err) {
     throw err;
   }
@@ -118,16 +123,11 @@ const getProductsByKeyword = async (word, column = 'price', sort = 'asc') => {
   let queryString = 'SELECT products.id, username, products.name, description, \
       price, currency, stock, listed_at FROM products \
       JOIN users ON user_id = users.id \
-      WHERE products.name ILIKE $1 OR description ILIKE $1 ORDER BY';
+      WHERE products.name ILIKE $1 OR description ILIKE $1';
   try {
-    const columnString = await getColumnString('products', column);
-    if (columnString !== '') queryString += columnString;
-    if (sort.toLowerCase() === 'asc') queryString += ' ASC';
-    if (sort.toLowerCase() === 'desc') queryString += ' DESC';
-    const { rows } = await query(
-      queryString,
-      [`%${word.toLowerCase()}%`]
-    );
+    const extraString = await getQueryString('products', column, sort);
+    queryString += extraString;
+    const { rows } = await query(queryString, [`%${word.toLowerCase()}%`]);
     return rows || null;
   } catch (err) {
     throw err;
@@ -156,16 +156,11 @@ const getProductsByUser = async (username) => {
 const getProducts = async (column = 'price', sort = 'asc') => {
   let queryString = 'SELECT products.id, username, products.name, description, \
       price, currency, stock, listed_at FROM products \
-      JOIN users ON user_id = users.id ORDER BY $1';
+      JOIN users ON user_id = users.id';
   try {
-    const columnString = await getColumnString('products', column);
-    if (columnString !== '') queryString += columnString;
-    if (sort.toLowerCase() === 'asc') queryString += ' ASC';
-    if (sort.toLowerCase() === 'desc') queryString += ' DESC';
-    const { rows } = await query(
-      queryString,
-      [column]
-    );
+    const extraString = await getQueryString('products', column, sort);
+    queryString += extraString;
+    const { rows } = await query(queryString);
     return rows || null;
   } catch (err) {
     throw err;
