@@ -217,7 +217,8 @@ const getUserCart = async (user_id) => {
       throw new Error('User does not exist');
     }
     const { rows } = await query(
-      'SELECT product_id, quantity FROM users_carts WHERE user_id = $1',
+      'SELECT product_id, quantity, status FROM users_carts \
+      WHERE user_id = $1',
       [user_id]
     );
     return rows || null;
@@ -237,7 +238,7 @@ const addProductToCart = async (user_id, product_id, quantity) => {
     const { rows } = await query(
       'INSERT INTO users_carts \
       (user_id, product_id, quantity) \
-      VALUES ($1, $2, $3) RETURNING product_id, quantity',
+      VALUES ($1, $2, $3) RETURNING product_id, quantity, status',
       [user_id, product_id, quantity]
     );
     return rows[0] || null;
@@ -257,7 +258,8 @@ const updateProductInCart = async (user_id, product_id, quantity) => {
     const { rows } = await query(
       'UPDATE users_carts \
       SET quantity = $1 \
-      WHERE user_id = $2 AND product_id = $3 RETURNING product_id, quantity',
+      WHERE user_id = $2 AND product_id = $3 \
+      RETURNING product_id, quantity, status',
       [quantity, user_id, product_id]
     );
     return rows[0] || null;
@@ -340,8 +342,8 @@ const getOrderProductsFromOrder = async (user_id, order_id) => {
       throw new Error('Unable to find order');
     }
     const { rows } = await query(
-      'SELECT product_id, quantity FROM orders_products \
-      WHERE order_id = $1',
+      'SELECT product_id, quantity, status \
+      FROM orders_products WHERE order_id = $1',
       [order_id]
     );
     return {

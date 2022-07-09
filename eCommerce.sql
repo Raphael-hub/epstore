@@ -13,8 +13,13 @@ CREATE TYPE "currencies" AS ENUM (
 CREATE TYPE "order_status" AS ENUM (
   'pending',
   'shipped',
-  'fulfilled',
-  'cancelled'
+  'cancelled',
+  'disputed'
+);
+
+CREATE TYPE "order_product_status" AS ENUM (
+  'pending',
+  'shipped'
 );
 
 CREATE TABLE "users" (
@@ -58,6 +63,7 @@ CREATE TABLE "orders_products" (
   "order_id" int REFERENCES "orders"("id") ON DELETE CASCADE,
   "product_id" int REFERENCES "products"("id") ON DELETE CASCADE,
   "quantity" int DEFAULT 1,
+  "status" order_product_status DEFAULT 'pending',
   CHECK ("quantity" > 0)
 );
 
