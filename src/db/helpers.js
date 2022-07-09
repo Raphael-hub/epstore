@@ -97,17 +97,36 @@ const getProductById = async (id) => {
   }
 };
 
+const getColumnString = async (tablename, column) => {
+  try {
+    const { rows } = await query(
+      'SELECT column_name FROM information_schema.columns \
+      WHERE table_name = $1',
+      [tablename]
+    );
+    let columnString;
+    if (rows.filter(i => i.column_name === column)) {
+      columnString = ` ${column}`;
+    }
+    return columnString;
+  } catch (err) {
+    throw err;
+  }
+};
+
 const getProductsByKeyword = async (word, column = 'price', sort = 'asc') => {
   let queryString = 'SELECT products.id, username, products.name, description, \
       price, currency, stock, listed_at FROM products \
       JOIN users ON user_id = users.id \
-      WHERE products.name ILIKE $1 OR description ILIKE $1 ORDER BY $2';
-  if (sort.toLowerCase() === 'asc') queryString += ' ASC';
-  if (sort.toLowerCase() === 'desc') queryString += ' DESC';
+      WHERE products.name ILIKE $1 OR description ILIKE $1 ORDER BY';
   try {
+    const columnString = await getColumnString('products', column);
+    if (columnString !== '') queryString += columnString;
+    if (sort.toLowerCase() === 'asc') queryString += ' ASC';
+    if (sort.toLowerCase() === 'desc') queryString += ' DESC';
     const { rows } = await query(
       queryString,
-      [`%${word.toLowerCase()}%`, column]
+      [`%${word.toLowerCase()}%`]
     );
     return rows || null;
   } catch (err) {
@@ -138,9 +157,11 @@ const getProducts = async (column = 'price', sort = 'asc') => {
   let queryString = 'SELECT products.id, username, products.name, description, \
       price, currency, stock, listed_at FROM products \
       JOIN users ON user_id = users.id ORDER BY $1';
-  if (sort.toLowerCase() === 'asc') queryString += ' ASC';
-  if (sort.toLowerCase() === 'desc') queryString += ' DESC';
   try {
+    const columnString = await getColumnString('products', column);
+    if (columnString !== '') queryString += columnString;
+    if (sort.toLowerCase() === 'asc') queryString += ' ASC';
+    if (sort.toLowerCase() === 'desc') queryString += ' DESC';
     const { rows } = await query(
       queryString,
       [column]
@@ -217,7 +238,7 @@ const getUserCart = async (user_id) => {
       throw new Error('User does not exist');
     }
     const { rows } = await query(
-      'SELECT product_id, quantity, status FROM users_carts \
+      'SELECT product_id, quantity FROM users_carts \
       WHERE user_id = $1',
       [user_id]
     );
@@ -238,7 +259,7 @@ const addProductToCart = async (user_id, product_id, quantity) => {
     const { rows } = await query(
       'INSERT INTO users_carts \
       (user_id, product_id, quantity) \
-      VALUES ($1, $2, $3) RETURNING product_id, quantity, status',
+      VALUES ($1, $2, $3) RETURNING product_id, quantity',
       [user_id, product_id, quantity]
     );
     return rows[0] || null;
@@ -259,7 +280,7 @@ const updateProductInCart = async (user_id, product_id, quantity) => {
       'UPDATE users_carts \
       SET quantity = $1 \
       WHERE user_id = $2 AND product_id = $3 \
-      RETURNING product_id, quantity, status',
+      RETURNING product_id, quantity',
       [quantity, user_id, product_id]
     );
     return rows[0] || null;
@@ -434,7 +455,7 @@ const createOrderFromProduct = async (user_id, product_id, quantity) => {
     );
     const items = await client.query(
       'INSERT INTO orders_products (order_id, product_id, quantity) \
-      VALUES ($1, $2, $3) RETURNING product_id, quantity',
+      VALUES ($1, $2, $3) RETURNING product_id, quantity, status',
       [order.rows[0].id, product_id, quantity]
     );
     await client.query(
