@@ -3,6 +3,9 @@ const { orders } = require('../db/helpers.js');
 const { isLoggedIn } = require('../utils/loggedIn.js');
 
 router.post('/', isLoggedIn, async (req, res, next) => {
+  if (!req.user.address) {
+    return res.status(400).json({ error: 'User address not set' });
+  }
   try {
     const order = await orders.createOrderFromCart(req.user.id);
     if (!order) {
@@ -15,6 +18,9 @@ router.post('/', isLoggedIn, async (req, res, next) => {
 });
 
 router.post('/:product_id', isLoggedIn, async (req, res, next) => {
+  if (!req.user.address) {
+    return res.status(400).json({ error: 'User address not set' });
+  }
   const product_id = parseInt(req.params.product_id);
   const quantity = req.body.quantity;
   try {
