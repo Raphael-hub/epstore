@@ -10,16 +10,11 @@ CREATE TYPE "currencies" AS ENUM (
   'usd'
 );
 
-CREATE TYPE "order_status" AS ENUM (
+CREATE TYPE "status" AS ENUM (
   'pending',
   'shipped',
   'cancelled',
   'disputed'
-);
-
-CREATE TYPE "order_product_status" AS ENUM (
-  'pending',
-  'shipped'
 );
 
 CREATE TABLE "users" (
@@ -55,7 +50,7 @@ CREATE TABLE "users_carts" (
 CREATE TABLE "orders" (
   "id" serial PRIMARY KEY,
   "user_id" int REFERENCES "users"("id") ON DELETE CASCADE,
-  "status" order_status DEFAULT 'pending',
+  "status" status DEFAULT 'pending',
   "created_at" timestamp NOT NULL
 );
 
@@ -63,7 +58,7 @@ CREATE TABLE "orders_products" (
   "order_id" int REFERENCES "orders"("id") ON DELETE CASCADE,
   "product_id" int REFERENCES "products"("id") ON DELETE CASCADE,
   "quantity" int DEFAULT 1,
-  "status" order_product_status DEFAULT 'pending',
+  "status" status DEFAULT 'pending',
   CHECK ("quantity" > 0)
 );
 
