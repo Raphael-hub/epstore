@@ -13,6 +13,9 @@ const isInStock = async (product_id) => {
 const getProductStock = async (product_id) => {
   try {
     const product = await products.getProductById(product_id);
+    if (!product) {
+      return -1;
+    }
     return product.stock;
   } catch (err) {
     throw err;
