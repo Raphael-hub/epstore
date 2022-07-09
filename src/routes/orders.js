@@ -27,6 +27,11 @@ router.get('/:order_id', isLoggedIn, async (req, res, next) => {
   }
 });
 
+
+
+
+
+
 router.delete('/:order_id', isLoggedIn, async (req, res, next) => {
   const id = parseInt(req.params.order_id);
   try {
