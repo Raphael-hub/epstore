@@ -75,11 +75,11 @@ const updateUserById = async (id, updates) => {
 
 const deleteUserById = async (id) => {
   try {
-    const { rows } = await query(
-      'DELETE FROM users WHERE id = $1 RETURNING *',
+    const result = await query(
+      'DELETE FROM users WHERE id = $1',
       [id]
     );
-    return rows[0] || null;
+    return result.rowCount;
   } catch (err) {
     throw err;
   }
@@ -88,9 +88,7 @@ const deleteUserById = async (id) => {
 const getProductById = async (id) => {
   try {
     const { rows } = await query(
-      'SELECT products.id, username, products.name, description, \
-      price, currency, stock, listed_at FROM products \
-      JOIN users ON user_id = users.id WHERE products.id = $1',
+      'SELECT * FROM products WHERE id = $1',
       [id]
     );
     return rows[0] || null;
@@ -203,11 +201,11 @@ const deleteProductById = async (user_id, product_id) => {
     if (product.user_id !== user_id) {
       throw new Error("Can't delete other user's products");
     }
-    const { rows } = await query(
-      'DELETE FROM products WHERE id = $1 RETURNING *',
-      [id]
+    const result = await query(
+      'DELETE FROM products WHERE id = $1',
+      [product_id]
     );
-    return rows[0] || null;
+    return result.rowCount;
   } catch (err) {
     throw err;
   }
@@ -219,7 +217,7 @@ const getUserCart = async (user_id) => {
       throw new Error('User does not exist');
     }
     const { rows } = await query(
-      'SELECT * FROM users_carts WHERE user_id = $1',
+      'SELECT product_id, quantity FROM users_carts WHERE user_id = $1',
       [user_id]
     );
     return rows || null;
@@ -239,7 +237,7 @@ const addProductToCart = async (user_id, product_id, quantity) => {
     const { rows } = await query(
       'INSERT INTO users_carts \
       (user_id, product_id, quantity) \
-      VALUES ($1, $2, $3) RETURNING *',
+      VALUES ($1, $2, $3) RETURNING product_id, quantity',
       [user_id, product_id, quantity]
     );
     return rows[0] || null;
@@ -259,7 +257,7 @@ const updateProductInCart = async (user_id, product_id, quantity) => {
     const { rows } = await query(
       'UPDATE users_carts \
       SET quantity = $1 \
-      WHERE user_id = $2 AND product_id = $3 RETURNING *',
+      WHERE user_id = $2 AND product_id = $3 RETURNING product_id, quantity',
       [quantity, user_id, product_id]
     );
     return rows[0] || null;
@@ -276,12 +274,12 @@ const removeProductFromCart = async (user_id, product_id) => {
     if (!await getProductById(product_id)) {
       throw new Error('Product does not exist');
     }
-    const { rows } = await query(
+    const result = await query(
       'DELETE FROM users_carts \
-      WHERE user_id = $1 AND product_id = $2 RETURNING *',
+      WHERE user_id = $1 AND product_id = $2',
       [user_id, product_id]
     );
-    return rows[0] || null;
+    return result.rowCount;
   } catch (err) {
     throw err;
   }
@@ -292,12 +290,12 @@ const emptyUserCart = async (user_id) => {
     if (!await getUserById(user_id)) {
       throw new Error('User does not exist');
     }
-    const { rows } = await query(
+    const result = await query(
       'DELETE FROM users_carts \
-      WHERE user_id = $1 RETURNING *',
+      WHERE user_id = $1',
       [user_id]
     );
-    return rows || null;
+    return result.rowCount;
   } catch (err) {
     throw err;
   }
@@ -395,8 +393,13 @@ const createOrderFromCart = async (user_id) => {
         WHERE id = $2',
         [cart[i].quantity, cart[i].product_id]
       );
+
       items.push(res.rows[0]);
     }
+    await client.query(
+      'DELETE FROM users_carts WHERE user_id = $1',
+      [user_id]
+    );
     await client.query('COMMIT');
     return { order: order.rows[0], products: items };
   } catch (err) {
