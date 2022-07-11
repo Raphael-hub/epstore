@@ -508,10 +508,6 @@ const cancelOrder = async (user_id, order_id) => {
     if (order.status !== 'pending') {
       throw new Error('Can\'t cancel an order being processed');
     }
-    const order_products = await getOrderProductsFromOrder(user_id, order_id);
-    if (order_products.products.filter(i => i.status === 'shipped').length > 0) {
-      throw new Error('A product in this order has already been shipped');
-    }
     await client.query('BEGIN');
     const { rows } = await client.query(
       "UPDATE orders SET status = 'cancelled' \
@@ -538,6 +534,44 @@ const cancelOrder = async (user_id, order_id) => {
         [items.rows[i].product_id, order_id]
       );
     }
+    await client.query('COMMIT');
+    return rows || null;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
+const cancelOrderProduct = async (user_id, order_id, product_id) => {
+  const client = await getClient();
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
+    const orders_products = await getOrderProductsFromOrder(user_id, order_id);
+    const order = order_products.filter(i => i.product_id === product_id);
+    if (!order) {
+      throw new Error('Unable to find product in order');
+    }
+    if (order.status === 'cancelled') {
+      throw new Error('Product already cancelled');
+    }
+    if (order.status !== 'pending') {
+      throw new Error('Can\'t cancel a product being processed');
+    }
+    await client.query('BEGIN');
+    const { rows } = await client.query(
+      "UPDATE orders_products SET status = 'cancelled' \
+      WHERE order_id = $1 AND product_id = $2 RETURNING *",
+      [order_id, product_id]
+    );
+    await client.query(
+      'UPDATE products SET stock = stock + $1 \
+      WHERE id = $2',
+      [rows[0].quantity, rows[0].product_id]
+    );
     await client.query('COMMIT');
     return rows || null;
   } catch (err) {
@@ -581,5 +615,6 @@ module.exports = {
     createOrderFromCart,
     createOrderFromProduct,
     cancelOrder,
+    cancelOrderProduct,
   },
 };
