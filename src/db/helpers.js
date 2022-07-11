@@ -508,6 +508,10 @@ const cancelOrder = async (user_id, order_id) => {
     if (order.status !== 'pending') {
       throw new Error('Can\'t cancel an order being processed');
     }
+    const order_products = await getOrderProductsFromOrder(user_id, order_id);
+    if (order_products.products.filter(i => i.status === 'shipped').length > 0) {
+      throw new Error('A product in this order has already been shipped');
+    }
     await client.query('BEGIN');
     const { rows } = await client.query(
       "UPDATE orders SET status = 'cancelled' \
@@ -530,8 +534,8 @@ const cancelOrder = async (user_id, order_id) => {
       );
       await client.query(
         'UPDATE orders_products SET status = \'cancelled\' \
-        WHERE product_id = $1',
-        [items.rows[i].product_id]
+        WHERE product_id = $1 AND order_id = $2',
+        [items.rows[i].product_id, order_id]
       );
     }
     await client.query('COMMIT');
