@@ -60,6 +60,7 @@ CREATE TABLE "orders_products" (
   "quantity" int DEFAULT 1,
   "status" status DEFAULT 'pending',
   CHECK ("quantity" > 0)
+  PRIMARY KEY(order_id, product_id)
 );
 
 COMMENT ON COLUMN "users"."password" IS 'password stored as hash';
