@@ -555,7 +555,7 @@ const cancelOrderProduct = async (user_id, order_id, product_id) => {
       throw new Error('Unable to find order');
     }
     const orders_products = await getOrderProductsFromOrder(user_id, order_id);
-    const product = order_products.find(i => i.product_id === product_id);
+    const product = orders_products.products.find(i => i.product_id === product_id);
     if (!product) {
       throw new Error('Unable to find product in order');
     }
