@@ -530,10 +530,52 @@ const cancelOrder = async (user_id, order_id) => {
       );
       await client.query(
         'UPDATE orders_products SET status = \'cancelled\' \
-        WHERE product_id = $1',
-        [items.rows[i].product_id]
+        WHERE product_id = $1 AND order_id = $2',
+        [items.rows[i].product_id, order_id]
       );
     }
+    await client.query('COMMIT');
+    return rows || null;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
+const cancelOrderProduct = async (user_id, order_id, product_id) => {
+  const client = await getClient();
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
+    const order = await getOrderById(user_id, order_id);
+    if (!order) {
+      throw new Error('Unable to find order');
+    }
+    const orders_products = await getOrderProductsFromOrder(user_id, order_id);
+    const product = orders_products.products.find(i => i.product_id === product_id);
+    if (!product) {
+      throw new Error('Unable to find product in order');
+    }
+    if (product.status === 'cancelled') {
+      throw new Error('Product already cancelled');
+    }
+    if (product.status !== 'pending') {
+      throw new Error('Can\'t cancel a product being processed');
+    }
+    await client.query('BEGIN');
+    const { rows } = await client.query(
+      "UPDATE orders_products SET status = 'cancelled' \
+      WHERE order_id = $1 AND product_id = $2 RETURNING *",
+      [order_id, product_id]
+    );
+    await client.query(
+      'UPDATE products SET stock = stock + $1 \
+      WHERE id = $2',
+      [rows[0].quantity, product_id]
+    );
     await client.query('COMMIT');
     return rows || null;
   } catch (err) {
@@ -577,5 +619,6 @@ module.exports = {
     createOrderFromCart,
     createOrderFromProduct,
     cancelOrder,
+    cancelOrderProduct,
   },
 };

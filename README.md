@@ -15,9 +15,9 @@ product so any feedback is appreciated.
   - ~~Allow owners of products to see all orders including their products -
     but not the details of anything else in the order they are not the owner
     of~~
-  - Implement triggers to update order status to `part-shipped` or `shipped`
+  - Implement triggers to update order status from `pending` to `shipped`
     depending on how many items have been marked as shipped
-  - Implement simular triggers for when it is marked as `delivered`/`fulfilled`
+  - Implement `disputed` order status functionality
 - User roles
   - Implement ability for `admin` users to view details on all users and orders
   - Implement ability for `admin` and `moderator` users to remove products

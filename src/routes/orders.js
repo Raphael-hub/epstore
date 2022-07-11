@@ -45,4 +45,18 @@ router.delete('/:order_id', isLoggedIn, async (req, res, next) => {
   }
 });
 
+router.delete('/:order_id/:product_id', isLoggedIn, async (req, res, next) => {
+  const order_id = parseInt(req.params.order_id);
+  const product_id = parseInt(req.params.product_id);
+  try {
+    const order = await orders.cancelOrderProduct(req.user.id, order_id, product_id);
+    if (!order) {
+      return next({ message: 'Error cancelling product in order' });
+    }
+    return res.status(200).json(order);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;

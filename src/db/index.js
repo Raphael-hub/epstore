@@ -39,7 +39,7 @@ module.exports = {
       console.error('[db] last executed query', { query: client.lastQuery });
     }, 5000);
 
-    client.query = async (text, params) => {
+    client.query = (text, params) => {
       if (!params) params = [];
       client.lastQuery = { text, params };
       console.log('[db] executed query', { text, params });
