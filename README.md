@@ -12,9 +12,9 @@ product so any feedback is appreciated.
 ## TODO
 
 - Order status
-  - Allow owners of products to see all orders including their products - 
+  - ~~Allow owners of products to see all orders including their products -
     but not the details of anything else in the order they are not the owner
-    of
+    of~~
   - Implement triggers to update order status to `part-shipped` or `shipped`
     depending on how many items have been marked as shipped
   - Implement simular triggers for when it is marked as `delivered`/`fulfilled`
