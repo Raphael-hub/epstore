@@ -588,98 +588,122 @@ const cancelOrderProduct = async (user_id, order_id, product_id) => {
   }
 };
  
-const updateOrderStatus = async (order_id, status) => {
-  // check if they are trying to cancel the order and instead call the
-  // cancelOrder function
-  const buyer = // write a query to find the user_id of the person who
-                 // made the order
-                 /* await query(
-                  'SELECT user_id FROM orders WHERE orders.id === $1', [order_id]
-                 );
-                 */
-  if (status === 'cancelled') {
-    return await cancelOrder(buyer, order_id);
-  }
-  // now we would want to check the status is either 'shipped' or 'disputed'
-  // and throw an error if not "Unknown order status"
-  const statusList = ['shipped', 'disputed'];
-  if (!statusList.includes(status)) {
-    throw new Error('Unknown status');
-  }
-  // check the order_id exists and start transaction of updating the
-  // orders.status column and the orders_products.status column
-
-  /*
-   if (!buyer) {
-    throw new Error('Unable to find buyer)
-      
-    const { updatedOrder } = await query(
-      'UPDATE orders \
-      SET orders.status = $1\
-      WHERE orders.id = $2
-
-      UPDATE orders_products \
-      SET  orders_products.status = $1 \
-      WHERE orders_products.order_id = $2
-
-      RETURNING  order_id',
-      [status, order_id]
-    );
-    return updatedOrder[0] || null;
+const updateOrderStatus = async (user_id, order_id, status) => {
+  const client = await getClient();
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
     }
-  */
+    const buyer_id =  await query('SELECT user_id FROM orders WHERE id = $1', [order_id]);
+    
+    if (!buyer) {
+      throw new Error('Unable to find buyer');
+     }
+
+    if (status === 'cancelled') {
+      return await cancelOrder(user_id, order_id);
+    }
+
+    const statusList = ['shipped', 'disputed'];
+    if (!statusList.includes(status)) {
+      throw new Error('Unknown status');
+    }
+
+   
+// ****check query below 
+ 
+await client.query('BEGIN');
+    const { rows } = await client.query(
+      'UPDATE orders \
+      SET status = $3\
+      WHERE id = $2 AND user_id = $1 RETURNING  id',[user_id, order_id, status] );
+
+     const products = await getOrderProductsFromOrder(buyer_id, order_id);
+      for (let i = 0; i < products.length; i++) {
+         if (products[i].status === 'pending') {
+            await client.query(
+             'UPDATE orders_products \
+              SET status = $1 \
+              WHERE order_id = $2 AND product_id = $3',
+             [status, order_id, products[i].product_id]
+    );
+  }
+}
+   
+  await client.query('COMMIT');
+  return rows[0] || null;
+  
+} catch (err) {
+  await client.query('ROLLBACK');
+  throw err;
+} finally {
+  client.release();
+}
+    
+  
 };
 
-const updateOrderProductStatus = async (order_id, product_id, status) => {
+const updateOrderProductStatus = async (user_id, order_id, product_id, status) => {
 
+  const client = await getClient();
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
 
-  const buyer = // write a query to find the user_id of the person who
-                 // made the order
-                  await query(
-                  'SELECT user_id FROM orders WHERE orders.id === $1', [order_id]
-                 );
-  if (!buyer) {
-     throw new Error('Unable to find buyer');
-    } 
-                 
-  if (status === 'cancelled') {
-    return await cancelOrderProduct(buyer, order_id, product_id);
-  }
-  // now we would want to check the status is either 'shipped' or 'disputed'
-  // and throw an error if not "Unknown order status"
-  const statusList = ['shipped', 'disputed'];
-  if (!statusList.includes(status)) {
-    throw new Error('Unknown status');
-  }
-  const products_status = await query(
-    'SELECT status FROM orders_products WHERE orders_products.order_id = $1 ', [order_id]
-  )
-  const queryString = 
-  'UPDATE orders_products\
-   SET  orders_products.status = $1 \
-   WHERE orders_products.order_id = $2'
-  if (products_status.filter(status=> status === 'shipped' || status === 'disputed').length < products_status.length) {
-    queryString.append(
-      'UPDATE orders \
-      SET orders.status = $1\
-      WHERE orders.id = $2'
+    if (!await getProductById(product_id)) {
+      throw new Error('Product does not exist');
+    }
+    const buyer_id =  await query('SELECT user_id FROM orders WHERE id = $1', [order_id]);
+    
+    if (!buyer_id) {
+      throw new Error('Unable to find buyer');
+     }
+
+    if (status === 'cancelled') {
+      return await cancelOrder(user_id, order_id);
+    }
+
+    const statusList = ['shipped', 'disputed'];
+    if (!statusList.includes(status)) {
+      throw new Error('Unknown status');
+    }
+    //test area start
+
+    const orders_products = await getOrderProductsFromOrder(buyer_id, order_id);
+    const product = orders_products.products.find(i => i.product_id === product_id);
+    if (!product) {
+      throw new Error('Unable to find product in order');
+    }
+    await client.query('BEGIN');
+    const { rows } = await client.query(
+      "UPDATE orders_products SET status = $3 \
+      WHERE order_id = $1 AND product_id = $2 RETURNING *",
+      [order_id, product_id, status]
     );
-
-  }
-  queryString.append('RETURNING  order_id',
-  [status, order_id])
+   
+    if (orders_products.filter(product=> product.status === 'shipped' || product.status === 'disputed').length === orders_products.length) {
+      await client.query(
+         'UPDATE orders \
+          SET status = $3\
+          WHERE id = $2 AND user_id = $1',
+          [user_id, order_id, status]
+        );
+    
+      }
+    await client.query('COMMIT');
+    return rows[0] || null;
   
-  
-    const { updatedOrder } = await query(queryString);
-    return updatedOrder[0] || null;
-    };
+} catch (err) {
+  await client.query('ROLLBACK');
+  throw err;
+} finally {
+  client.release();
+}
 
+    //test area end
 
-
-
-
-
-
+  };
 
 
 module.exports = {
@@ -716,5 +740,7 @@ module.exports = {
     createOrderFromProduct,
     cancelOrder,
     cancelOrderProduct,
+    updateOrderStatus,
+    updateOrderProductStatus,
   },
 };
