@@ -1,5 +1,6 @@
 const express = require('express');
 const session = require('express-session');
+const pgSession = require('connect-pg-simple')(session);
 const passport = require('passport');
 const bodyParser = require('body-parser');
 
@@ -11,7 +12,6 @@ const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-const store = new session.MemoryStore();
 app.use(
   session({
     secret: SESSION_SECRET,
@@ -19,7 +19,10 @@ app.use(
     rolling: true,
     saveUninitialized: false,
     resave: false,
-    store,
+    store: new pgSession({
+      pool,
+      tableName: 'session',
+    }),
   })
 );
 

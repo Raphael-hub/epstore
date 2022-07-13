@@ -4,6 +4,9 @@ NodeJS + ExpressJS + PostgreSQL eCommerce platform for buying and selling
 items. This project is the backend server code for interacting with the
 database through an API.
 
+Sessions are stored persistently in the sessions table of the database and
+removed after their expiration date.
+
 This is just an MVP project and is not intended for use in a production
 environment. Please send any feature requests / bug reports, and I will try to
 address them. I do aim to rewrite this project and make it into a viable
@@ -40,6 +43,12 @@ cd epstore
 npm i
 ```
 
+Make sure that your postgres instance is running
+
+```sh
+sudo systemctl start postgresql-14.service
+```
+
 You will need to initialise a PostgreSQL database locally, create a user and
 give it a password and then create a database, then you can use the SQL file
 provided to set up the tables using the command below.
@@ -57,7 +66,8 @@ NODE_ENV='<development or production>'
 ```
 
 By setting `NODE_ENV` to development you will get detailed logs on all
-requests sent to the database.
+requests sent to the database. Production will hide these query logs. And all
+logs are disabled when running tests.
 
 Then you can run `npm start` and begin to interact
 with the API, as long as your PostgreSQL database is running.
@@ -68,3 +78,8 @@ The database behind this project is designed according to this entity
 relationship diagram
 
 ![Database Diagram](dbdiagram.png)
+
+## Tests
+
+You can run the current test suite with `npm test` - make sure that postgres is running first
+and initialised with the `eCommerce.sql` file beforehand.
