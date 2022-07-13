@@ -44,7 +44,8 @@ CREATE TABLE "users_carts" (
   "user_id" int REFERENCES "users"("id") ON DELETE CASCADE,
   "product_id" int REFERENCES "products"("id") ON DELETE CASCADE,
   "quantity" int DEFAULT 1,
-  CHECK("quantity" > 0)
+  CHECK("quantity" > 0),
+  PRIMARY KEY ("user_id", "product_id")
 );
 
 CREATE TABLE "orders" (
@@ -60,7 +61,7 @@ CREATE TABLE "orders_products" (
   "quantity" int DEFAULT 1,
   "status" status DEFAULT 'pending',
   CHECK ("quantity" > 0),
-  PRIMARY KEY(order_id, product_id)
+  PRIMARY KEY("order_id", "product_id")
 );
 
 CREATE TABLE "session" (
