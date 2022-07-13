@@ -59,9 +59,19 @@ CREATE TABLE "orders_products" (
   "product_id" int REFERENCES "products"("id") ON DELETE CASCADE,
   "quantity" int DEFAULT 1,
   "status" status DEFAULT 'pending',
-  CHECK ("quantity" > 0)
+  CHECK ("quantity" > 0),
   PRIMARY KEY(order_id, product_id)
 );
+
+CREATE TABLE "session" (
+  "sid" varchar NOT NULL COLLATE "default",
+  "sess" json NOT NULL,
+  "expire" timestamp(6) NOT NULL,
+  PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE
+)
+WITH (OIDS=FALSE);
+
+CREATE INDEX "IDX_session_expire" ON "session" ("expire");
 
 COMMENT ON COLUMN "users"."password" IS 'password stored as hash';
 
