@@ -601,15 +601,14 @@ const updateOrderStatus = async (user_id, order_id, status) => {
      }
 
     if (status === 'cancelled') {
-      return await cancelOrder(user_id, order_id);
+      return await cancelOrderProduct(buyer_id, order_id, product_id);
     }
 
     const statusList = ['shipped', 'disputed'];
     if (!statusList.includes(status)) {
       throw new Error('Unknown status');
     }
-
-   
+ 
 // ****check query below 
  
 await client.query('BEGIN');
@@ -639,8 +638,6 @@ await client.query('BEGIN');
 } finally {
   client.release();
 }
-    
-  
 };
 
 const updateOrderProductStatus = async (user_id, order_id, product_id, status) => {
@@ -651,9 +648,25 @@ const updateOrderProductStatus = async (user_id, order_id, product_id, status) =
       throw new Error('User does not exist');
     }
 
+    const OrdersProducts = await getOrderProductsFromOrder(user_id, order_id);
+     if ( !OrdersProducts.products.every(p => p.user_id === user_id)) {
+       throw new Error('Not every product in order belongs to vendor');
+     }
+    
     if (!await getProductById(product_id)) {
       throw new Error('Product does not exist');
     }
+
+    //test area start
+
+    
+    const Product = await getProductById(product_id);
+    const order = await getOrderById(order_id);
+    if (!Product.user_id === order.user_id) {
+      throw new Error('Product doesn\'t belong to user') 
+    }
+
+    //test area end
     const buyer_id =  await query('SELECT user_id FROM orders WHERE id = $1', [order_id]);
     
     if (!buyer_id) {
@@ -661,7 +674,7 @@ const updateOrderProductStatus = async (user_id, order_id, product_id, status) =
      }
 
     if (status === 'cancelled') {
-      return await cancelOrder(user_id, order_id);
+      return await cancelOrder(buyer_id, order_id);
     }
 
     const statusList = ['shipped', 'disputed'];
@@ -682,7 +695,7 @@ const updateOrderProductStatus = async (user_id, order_id, product_id, status) =
       [order_id, product_id, status]
     );
    
-    if (orders_products.filter(product=> product.status === 'shipped' || product.status === 'disputed').length === orders_products.length) {
+    if (orders_products.filter( p => p.status === status).length === orders_products.length) {
       await client.query(
          'UPDATE orders \
           SET status = $3\
