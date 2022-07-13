@@ -4,12 +4,12 @@
   "description": "Express + PostgreSQL eCommerce platform for buying/selling items",
   "main": "index.js",
   "scripts": {
-    "start": "node src/server.js",
+    "start": "cross-env NODE_ENV=production node src/server.js",
     "test": "cross-env NODE_ENV=test jest --coverage --forceExit"
   },
   "jest": {
     "roots": [
-      "tests/"
+      "test/"
     ],
     "testEnvironment": "node",
     "coveragePathIgnorePatterns": [
@@ -34,6 +34,7 @@
   "homepage": "https://github.com/h5law/epstore#readme",
   "dependencies": {
     "bcrypt": "^5.0.1",
+    "connect-pg-simple": "^7.0.0",
     "dotenv": "^16.0.1",
     "express": "^4.18.1",
     "express-session": "^1.17.3",
@@ -43,6 +44,7 @@
     "pg": "^8.7.3"
   },
   "devDependencies": {
+    "chai": "^4.3.6",
     "cross-env": "^7.0.3",
     "jest": "^28.1.2",
     "mocha": "^10.0.0",
