@@ -27,7 +27,7 @@ router.delete('/', isLoggedIn, async (req, res, next) => {
       if (err) {
         throw err;
       }
-      return res.status(200).json({ info: `Deleted user ${deleted.username}` })
+      return res.status(200).json({ info: `Deleted user` })
     });
   } catch (err) {
     return next(err);
