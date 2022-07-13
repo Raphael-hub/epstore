@@ -60,6 +60,9 @@ router.put('/', isLoggedIn, async (req, res, next) => {
 router.get('/:username', async (req, res, next) => {
   const username = req.params.username;
   try {
+    if (!await users.getUserByUsername(username)) {
+      return res.status(400).json({ error: 'Username not found' });
+    }
     const listings = await products.getProductsByUser(username);
     if (!listings) {
       return res.status(200).json({ info: 'This user has no products' });
