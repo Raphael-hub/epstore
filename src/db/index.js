@@ -41,7 +41,7 @@ module.exports = {
     const release = client.release;
 
     const timeout = setTimeout(() => {
-      if (NODE_ENV !== 'development') {
+      if (NODE_ENV === 'development') {
         console.error('[db] a client has been checked out for 5 seconds');
         console.error('[db] last executed query', { query: client.lastQuery });
       }
@@ -50,7 +50,7 @@ module.exports = {
     client.query = (text, params) => {
       if (!params) params = [];
       client.lastQuery = { text, params };
-      if (NODE_ENV !== 'development') {
+      if (NODE_ENV === 'development') {
         console.log('[db] executed query', { text, params });
       }
       return query.apply(client, [text, params]);
@@ -60,7 +60,7 @@ module.exports = {
       clearTimeout(timeout);
       client.query = query;
       client.release = release;
-      if (NODE_ENV !== 'development') {
+      if (NODE_ENV === 'development') {
         console.log('[db] releasing client');
       }
       return release.apply(client);
