@@ -492,6 +492,8 @@ const createOrderFromProduct = async (user_id, product_id, quantity) => {
   }
 };
 
+
+
 const cancelOrder = async (user_id, order_id) => {
   const client = await getClient();
   try {
@@ -585,6 +587,100 @@ const cancelOrderProduct = async (user_id, order_id, product_id) => {
     client.release();
   }
 };
+ 
+const updateOrderStatus = async (order_id, status) => {
+  // check if they are trying to cancel the order and instead call the
+  // cancelOrder function
+  const buyer = // write a query to find the user_id of the person who
+                 // made the order
+                 /* await query(
+                  'SELECT user_id FROM orders WHERE orders.id === $1', [order_id]
+                 );
+                 */
+  if (status === 'cancelled') {
+    return await cancelOrder(buyer, order_id);
+  }
+  // now we would want to check the status is either 'shipped' or 'disputed'
+  // and throw an error if not "Unknown order status"
+  const statusList = ['shipped', 'disputed'];
+  if (!statusList.includes(status)) {
+    throw new Error('Unknown status');
+  }
+  // check the order_id exists and start transaction of updating the
+  // orders.status column and the orders_products.status column
+
+  /*
+   if (!buyer) {
+    throw new Error('Unable to find buyer)
+      
+    const { updatedOrder } = await query(
+      'UPDATE orders \
+      SET orders.status = $1\
+      WHERE orders.id = $2
+
+      UPDATE orders_products \
+      SET  orders_products.status = $1 \
+      WHERE orders_products.order_id = $2
+
+      RETURNING  order_id',
+      [status, order_id]
+    );
+    return updatedOrder[0] || null;
+    }
+  */
+};
+
+const updateOrderProductStatus = async (order_id, product_id, status) => {
+
+
+  const buyer = // write a query to find the user_id of the person who
+                 // made the order
+                  await query(
+                  'SELECT user_id FROM orders WHERE orders.id === $1', [order_id]
+                 );
+  if (!buyer) {
+     throw new Error('Unable to find buyer');
+    } 
+                 
+  if (status === 'cancelled') {
+    return await cancelOrderProduct(buyer, order_id, product_id);
+  }
+  // now we would want to check the status is either 'shipped' or 'disputed'
+  // and throw an error if not "Unknown order status"
+  const statusList = ['shipped', 'disputed'];
+  if (!statusList.includes(status)) {
+    throw new Error('Unknown status');
+  }
+  const products_status = await query(
+    'SELECT status FROM orders_products WHERE orders_products.order_id = $1 ', [order_id]
+  )
+  const queryString = 
+  'UPDATE orders_products\
+   SET  orders_products.status = $1 \
+   WHERE orders_products.order_id = $2'
+  if (products_status.filter(status=> status === 'shipped' || status === 'disputed').length < products_status.length) {
+    queryString.append(
+      'UPDATE orders \
+      SET orders.status = $1\
+      WHERE orders.id = $2'
+    );
+
+  }
+  queryString.append('RETURNING  order_id',
+  [status, order_id])
+  
+  
+    const { updatedOrder } = await query(queryString);
+    return updatedOrder[0] || null;
+    };
+
+
+
+
+
+
+
+
 
 module.exports = {
   users: {
