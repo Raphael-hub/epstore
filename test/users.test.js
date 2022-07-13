@@ -10,6 +10,8 @@ const existingUser = {
   name: 'Supertest Test'
 };
 
+const agent = request.agent(server);
+
 describe('User endpoints', () => {
   // create supertest-test user for user tests
   beforeAll(async () => {
@@ -23,8 +25,6 @@ describe('User endpoints', () => {
 
   // delete supertest-test user after done
   afterAll((done) => {
-    const agent = request.agent(server);
-
     agent
       .post('/login')
       .set('Accept', 'application/json')
@@ -59,8 +59,6 @@ describe('User endpoints', () => {
 
     // delete test user after done testing registration
     afterAll((done) => {
-      const agent = request.agent(server);
-
       agent
         .post('/login')
         .set('Accept', 'application/json')
@@ -175,8 +173,6 @@ describe('User endpoints', () => {
       });
 
       it('return 401 if already logged in', (done) => {
-        const agent = request.agent(server);
-
         agent
           .post('/login')
           .set('Accept', 'application/json')
@@ -210,6 +206,54 @@ describe('User endpoints', () => {
         expect(res.status).to.equal(302);
         expect(res.headers['location']).to.equal('/profile');
       });
+    });
+  });
+
+  // logout
+  describe('POST /logout', () => {
+    afterAll((done) => {
+      agent
+        .post('/login')
+        .set('Accept', 'application/json')
+        .send({ username: existingUser.username, password: existingUser.password })
+        .expect(302)
+        .end((err, res) => {
+          if (err) {
+            return done(err);
+          }
+          expect(res.headers['location']).to.equal('/profile');
+          return done();
+        });
+    });
+
+    describe('failure', () => {
+      it('return 401 when not logged in', async () => {
+        const res = await request(server)
+          .post('/logout')
+          .set('Accept', 'application/json')
+          .send()
+        expect(res.headers['content-type']).to.match(/json/);
+        expect(res.status).to.equal(401);
+        expect(res.body.error).to.equal('Not logged in');
+      })
+    });
+
+    describe('success', () => {
+      it('return 200 when logout succeeds', (done) => {
+        agent
+          .post('/logout')
+          .set('Accept', 'application/json')
+          .send()
+          .expect(200)
+          .end((err, res) => {
+            if (err) {
+              return done(err);
+            }
+            expect(res.headers['content-type']).to.match(/json/);
+            expect(res.body.info).to.equal('Successfully logged out');
+            return done();
+          });
+      })
     });
   });
 });
