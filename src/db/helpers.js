@@ -614,8 +614,8 @@ const updateOrderStatus = async (user_id, order_id, status) => {
 await client.query('BEGIN');
     const { rows } = await client.query(
       'UPDATE orders \
-      SET status = $3\
-      WHERE id = $2 AND user_id = $1 RETURNING  id',[user_id, order_id, status] );
+      SET status = $1\
+      WHERE id = $2 AND user_id = $3 RETURNING  id',[status, order_id, user_id] );
 
      const products = await getOrderProductsFromOrder(buyer_id, order_id);
       for (let i = 0; i < products.length; i++) {
@@ -690,17 +690,17 @@ const updateOrderProductStatus = async (user_id, order_id, product_id, status) =
     }
     await client.query('BEGIN');
     const { rows } = await client.query(
-      "UPDATE orders_products SET status = $3 \
-      WHERE order_id = $1 AND product_id = $2 RETURNING *",
-      [order_id, product_id, status]
+      "UPDATE orders_products SET status = $1 \
+      WHERE order_id = $2 AND product_id = $3 RETURNING *",
+      [status, order_id, product_id]
     );
    
     if (orders_products.filter( p => p.status === status).length === orders_products.length) {
       await client.query(
          'UPDATE orders \
-          SET status = $3\
-          WHERE id = $2 AND user_id = $1',
-          [user_id, order_id, status]
+          SET status = $1\
+          WHERE id = $2 AND user_id = $3',
+          [status, order_id, user_id]
         );
     
       }
