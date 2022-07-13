@@ -65,7 +65,7 @@ router.get('/:username', async (req, res, next) => {
     }
     const listings = await products.getProductsByUser(username);
     if (!listings) {
-      return res.status(200).json({ info: 'This user has no products' });
+      return next({ message: 'Error fetching products' });
     }
     return res.status(200).json({ user: username, products: listings });
   } catch (err) {
