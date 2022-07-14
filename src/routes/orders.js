@@ -26,9 +26,38 @@ router.get('/:order_id', isLoggedIn, async (req, res, next) => {
     return next(err);
   }
 });
+// <
+update order_status
+router.put('/:order_id', isLoggedIn, async (req, res, next) => {
+  const id = parseInt(req.params.order_id);
+  const status = req.body;
+  try {
+    const order = await orders.updateOrderStatus(req.user.id, id, status);
+    if (!order) {
+      return next({ message: 'Error updating order' });
+    }
+    return res.status(200).json(order);
+  } catch (err) {
+    return next(err);
+  }
+});
+update product_status in order
 
-
-
+router.put('/:order_id/:product_id', isLoggedIn, async (req, res, next) => {
+  const order_id = parseInt(req.params.order_id);
+  const product_id = parseInt(req.params.product_id);
+  const status = req.body;
+  try {
+    const order = await orders.updateOrderProductStatus(req.user.id, order_id, product_id, status);
+    if (!order) {
+      return next({ message: 'Error updating product in order' });
+    }
+    return res.status(200).json(order);
+  } catch (err) {
+    return next(err);
+  }
+});
+// />
 
 
 
