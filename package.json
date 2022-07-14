@@ -4,7 +4,8 @@
   "description": "Express + PostgreSQL eCommerce platform for buying/selling items",
   "main": "./src/server.js",
   "scripts": {
-    "start": "cross-env NODE_ENV=production node src/server.js",
+    "prod": "cross-env NODE_ENV=production node src/server.js",
+    "start": "node src/server.js",
     "test": "cross-env NODE_ENV=test jest --forceExit"
   },
   "jest": {
