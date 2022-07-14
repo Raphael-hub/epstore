@@ -2,7 +2,7 @@ const router = require('express').Router();
 const { orders } = require('../db/helpers.js');
 const { isLoggedIn } = require('../utils/loggedIn.js');
 const checkUserOwnsProduct = require('../utils/userOwns.js');
-const _ = require('lodash');
+
 
 router.get('/', isLoggedIn, async (req, res, next) => {
   try {
