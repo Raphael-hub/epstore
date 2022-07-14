@@ -689,9 +689,9 @@ const updateOrderProductStatus = async (user_id, order_id, product_id, status) =
     if (!statusList.includes(status)) {
       throw new Error('Unknown status');
     }
-    const orders_products = await getOrderProductsFromOrder(buyer_id, order_id);
-    const product = orders_products.products.find(i => i.product_id === product_id);
-    if (!product) {
+    const all_products = await getOrderProductsFromOrder(buyer_id, order_id);
+    const order_product = all_products.products.find(i => i.product_id === product_id);
+    if (!order_product) {
       throw new Error('Unable to find product in order');
     }
     await client.query('BEGIN');
@@ -700,7 +700,7 @@ const updateOrderProductStatus = async (user_id, order_id, product_id, status) =
       WHERE order_id = $2 AND product_id = $3',
       [status, order_id, product_id]
     );
-    if (orders_products.filter(p => p.status === status).length === orders_products.length) {
+    if (all_products.filter(p => p.status === status).length === all_products.length) {
       await client.query(
         'UPDATE orders \
         SET status = $1 \
