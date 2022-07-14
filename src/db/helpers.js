@@ -146,7 +146,7 @@ const getQueryString = async (tablename, column, sort) => {
   }
 };
 
-const getProductsByKeyword = async (word, column = 'price', sort = 'asc') => {
+const getProductsByKeyword = async (word, column = 'listed_at', sort = 'desc') => {
   let queryString = 'SELECT products.id, username, products.name, description, \
       price, currency, stock, listed_at FROM products \
       JOIN users ON user_id = users.id \
@@ -180,7 +180,7 @@ const getProductsByUser = async (username) => {
   }
 };
 
-const getProducts = async (column = 'price', sort = 'asc') => {
+const getProducts = async (column = 'listed_at', sort = 'desc') => {
   let queryString = 'SELECT products.id, username, products.name, description, \
       price, currency, stock, listed_at FROM products \
       JOIN users ON user_id = users.id';
