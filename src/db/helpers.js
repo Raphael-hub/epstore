@@ -131,12 +131,15 @@ const getQueryString = async (tablename, column, sort) => {
     let queryString = ' ORDER BY';
     const columnName = rows.find(i => i.column_name === column);
     if (!columnName) {
-      queryString += ' price';
+      queryString += ' listed_at';
     } else {
       queryString += ` ${columnName.column_name}`;
     }
-    if (sort.toLowerCase() === 'asc') queryString += ' ASC';
-    if (sort.toLowerCase() === 'desc') queryString += ' DESC';
+    if (['asc', 'desc'].includes(sort.toLowerCase())) {
+      queryString += ` ${sort.toUpperCase()}`;
+    } else {
+      queryString += ' DESC';
+    }
     return queryString;
   } catch (err) {
     throw err;
