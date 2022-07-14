@@ -2,15 +2,16 @@
   "name": "epstore",
   "version": "1.0.0",
   "description": "Express + PostgreSQL eCommerce platform for buying/selling items",
-  "main": "index.js",
+  "main": "./src/server.js",
   "scripts": {
     "start": "cross-env NODE_ENV=production node src/server.js",
-    "test": "cross-env NODE_ENV=test jest --coverage --forceExit"
+    "test": "cross-env NODE_ENV=test jest --forceExit"
   },
   "jest": {
     "roots": [
       "test/"
     ],
+    "verbose": true,
     "testEnvironment": "node",
     "coveragePathIgnorePatterns": [
       "node_modules/"
