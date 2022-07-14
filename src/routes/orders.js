@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const { orders } = require('../db/helpers.js');
 const { isLoggedIn } = require('../utils/loggedIn.js');
-const {checkUserOwnsProduct} = require()
+const checkUserOwnsProduct = require('../utils/userOwns.js');
 
 router.get('/', isLoggedIn, async (req, res, next) => {
   try {
@@ -29,7 +29,7 @@ router.get('/:order_id', isLoggedIn, async (req, res, next) => {
 });
 // <
 // update order_status by order_id
-router.put('/:order_id', isLoggedIn, checkUserOwnsProduct, async (req, res, next) => {
+router.put('/:order_id', isLoggedIn,  async (req, res, next) => {
   const id = parseInt(req.params.order_id);
   const {status} = req.body;
   try {

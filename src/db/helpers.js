@@ -611,14 +611,22 @@ const updateOrderStatus = async (user_id, order_id, status) => {
  
 // ****check query below 
  
-await client.query('BEGIN');
-    const { rows } = await client.query(
+    await client.query('BEGIN');
+    await client.query(
       'UPDATE orders \
       SET status = $1\
-      WHERE id = $2 AND user_id = $3 RETURNING  id',[status, order_id, user_id] );
+      WHERE id = $2 AND user_id = $3',[status, order_id, user_id] );
 
      const products = await getOrderProductsFromOrder(buyer_id, order_id);
       for (let i = 0; i < products.length; i++) {
+
+        const vendor_id = await client.query(
+          'SELECT user_id FROM products WHERE id = $1',
+           [products[i].product_id]
+        );
+        if (vendor_id !== user_id) {
+          throw new Error('User doesn\'t own all products in order' );
+        }
          if (products[i].status === 'pending') {
             await client.query(
              'UPDATE orders_products \
@@ -628,16 +636,31 @@ await client.query('BEGIN');
     );
   }
 }
-   
+  const { rows } = await query(
+  'WITH orders_products_seller AS ( \
+  SELECT order_id, product_id, quantity, status AS product_status, \
+  user_id AS seller_id \
+  FROM orders_products \
+  JOIN products ON product_id = products.id \
+  ) \
+  SELECT order_id, users.username AS buyer_username, name AS buyer_name, \
+  address AS buyer_address, orders.status AS order_status, product_id, \
+  quantity, product_status \
+  FROM orders_products_seller \
+  JOIN orders ON order_id = orders.id \
+  JOIN users ON orders.user_id = users.id \
+  WHERE seller_id = $1 AND order_id = $2',
+  [user_id, order_id]
+); 
   await client.query('COMMIT');
-  return rows[0] || null;
+  return rows || null;
   
 } catch (err) {
   await client.query('ROLLBACK');
   throw err;
 } finally {
   client.release();
-}
+   }
 };
 
 const updateOrderProductStatus = async (user_id, order_id, product_id, status) => {
@@ -647,12 +670,7 @@ const updateOrderProductStatus = async (user_id, order_id, product_id, status) =
     if (!await getUserById(user_id)) {
       throw new Error('User does not exist');
     }
-
-    const OrdersProducts = await getOrderProductsFromOrder(user_id, order_id);
-     if ( !OrdersProducts.products.every(p => p.user_id === user_id)) {
-       throw new Error('Not every product in order belongs to vendor');
-     }
-    
+ 
     if (!await getProductById(product_id)) {
       throw new Error('Product does not exist');
     }
@@ -661,13 +679,16 @@ const updateOrderProductStatus = async (user_id, order_id, product_id, status) =
 
     
     const Product = await getProductById(product_id);
-    const order = await getOrderById(order_id);
-    if (!Product.user_id === order.user_id) {
+ 
+    if (!Product.user_id === user_id) {
       throw new Error('Product doesn\'t belong to user') 
     }
 
     //test area end
-    const buyer_id =  await query('SELECT user_id FROM orders WHERE id = $1', [order_id]);
+    const buyer_id =  await query(
+      'SELECT user_id FROM orders WHERE id = $1', 
+      [order_id]
+    );
     
     if (!buyer_id) {
       throw new Error('Unable to find buyer');
@@ -689,21 +710,38 @@ const updateOrderProductStatus = async (user_id, order_id, product_id, status) =
       throw new Error('Unable to find product in order');
     }
     await client.query('BEGIN');
-    const { rows } = await client.query(
+    await client.query(
       "UPDATE orders_products SET status = $1 \
-      WHERE order_id = $2 AND product_id = $3 RETURNING *",
+      WHERE order_id = $2 AND product_id = $3",
       [status, order_id, product_id]
     );
+
    
     if (orders_products.filter( p => p.status === status).length === orders_products.length) {
       await client.query(
          'UPDATE orders \
           SET status = $1\
           WHERE id = $2 AND user_id = $3',
-          [status, order_id, user_id]
+          [status, order_id, buyer_id]
         );
     
       }
+      const { rows } = await query(
+        'WITH orders_products_seller AS ( \
+        SELECT order_id, product_id, quantity, status AS product_status, \
+        user_id AS seller_id \
+        FROM orders_products \
+        JOIN products ON product_id = products.id \
+        ) \
+        SELECT order_id, users.username AS buyer_username, name AS buyer_name, \
+        address AS buyer_address, orders.status AS order_status, product_id, \
+        quantity, product_status \
+        FROM orders_products_seller \
+        JOIN orders ON order_id = orders.id \
+        JOIN users ON orders.user_id = users.id \
+        WHERE seller_id = $1 AND order_id = $2 AND product_id = $3',
+        [user_id, order_id, product_id]
+      );
     await client.query('COMMIT');
     return rows[0] || null;
   
