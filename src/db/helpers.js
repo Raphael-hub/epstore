@@ -48,7 +48,7 @@ const getVendorOrders = async (user_id) => {
       FROM orders_products_seller \
       JOIN orders ON order_id = orders.id \
       JOIN users ON orders.user_id = users.id \
-      WHERE seller_id = $1',
+      WHERE seller_id = $1 ORDER BY order_id DESC',
       [user_id]
     );
     return rows || null;
@@ -597,11 +597,12 @@ const updateOrderStatus = async (user_id, order_id, status) => {
     if (!await getUserById(user_id)) {
       throw new Error('User does not exist');
     }
-    const buyer_id =  await query(
+    const result =  await query(
       'SELECT user_id FROM orders WHERE id = $1',
       [order_id]
     );
-    if (!buyer) {
+    const buyer_id = result.rows[0].user_id;
+    if (!buyer_id) {
       throw new Error('Unable to find buyer');
      }
     if (status === 'cancelled') {
@@ -636,7 +637,7 @@ const updateOrderStatus = async (user_id, order_id, status) => {
         );
       }
     }
-    const { rows } = await query(
+    const { rows } = await client.query(
       'WITH orders_products_seller AS ( \
       SELECT order_id, product_id, quantity, status AS product_status, \
       user_id AS seller_id \
@@ -675,10 +676,11 @@ const updateOrderProductStatus = async (user_id, order_id, product_id, status) =
     if (!product.user_id === user_id) {
       throw new Error('Product doesn\'t belong to user')
     }
-    const buyer_id =  await query(
+    const result = await query(
       'SELECT user_id FROM orders WHERE id = $1',
       [order_id]
     );
+    const buyer_id = result.rows[0].user_id;
     if (!buyer_id) {
       throw new Error('Unable to find buyer');
      }
@@ -689,18 +691,21 @@ const updateOrderProductStatus = async (user_id, order_id, product_id, status) =
     if (!statusList.includes(status)) {
       throw new Error('Unknown status');
     }
-    const all_products = await getOrderProductsFromOrder(buyer_id, order_id);
-    const order_product = all_products.products.find(i => i.product_id === product_id);
-    if (!order_product) {
+    const orderProducts = await getOrderProductsFromOrder(buyer_id, order_id);
+    if (!orderProducts.products.find(i => i.product_id === product_id)) {
       throw new Error('Unable to find product in order');
     }
+    console.log('beginning');
     await client.query('BEGIN');
     await client.query(
-      'UPDATE orders_products SET status = $1 \
+      'UPDATE orders_products \
+      SET status = $1 \
       WHERE order_id = $2 AND product_id = $3',
       [status, order_id, product_id]
     );
-    if (all_products.filter(p => p.status === status).length === all_products.length) {
+    const newOrderProducts = await getOrderProductsFromOrder(buyer_id, order_id);
+    if (newOrderProducts.products
+        .filter(p => p.status === status).length === orderProducts.length) {
       await client.query(
         'UPDATE orders \
         SET status = $1 \
@@ -708,7 +713,7 @@ const updateOrderProductStatus = async (user_id, order_id, product_id, status) =
         [status, order_id, buyer_id]
       );
     }
-    const { rows } = await query(
+    const { rows } = await client.query(
       'WITH orders_products_seller AS ( \
       SELECT order_id, product_id, quantity, status AS product_status, \
       user_id AS seller_id \
