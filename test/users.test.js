@@ -4,16 +4,16 @@ const chai = require('chai');
 const expect = chai.expect;
 
 const existingUser = {
-  username: 'supertest-test',
+  username: 'supertest-users',
   password: 'b1gl3g3nd',
-  email: 'supertest-test@example.com',
+  email: 'st-users@example.com',
   name: 'Supertest Test'
 };
 
 const newUser = {
   username: 'supertest-new',
   password: 'b1gl3g3nd',
-  email: 'supertest-new@example.com',
+  email: 'st-new@example.com',
   name: 'Supertest New'
 };
 
@@ -31,7 +31,7 @@ describe('User endpoints', () => {
     expect(res.headers['location']).to.equal('/profile');
   });
 
-  // delete supertest-test and test user after done
+  // delete supertest-test user after done
   afterAll((done) => {
     // login and delete supertest-test user
     agent
@@ -295,7 +295,7 @@ describe('User endpoints', () => {
         agent
           .put('/profile')
           .set('Accept', 'application/json')
-          .send({ email: 'supertest-test@example.com' })
+          .send({ email: existingUser.email })
           .expect(400)
           .end((err, res) => {
             if (err) {
