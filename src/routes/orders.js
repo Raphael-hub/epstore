@@ -1,6 +1,8 @@
 const router = require('express').Router();
 const { orders } = require('../db/helpers.js');
 const { isLoggedIn } = require('../utils/loggedIn.js');
+const checkUserOwnsProduct = require('../utils/userOwns.js');
+
 
 router.get('/', isLoggedIn, async (req, res, next) => {
   try {
@@ -22,6 +24,35 @@ router.get('/:order_id', isLoggedIn, async (req, res, next) => {
       return next({ message: 'Error fetching order details' });
     }
     return res.status(200).json(order);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.put('/:order_id', isLoggedIn,  async (req, res, next) => {
+  const id = parseInt(req.params.order_id);
+  const {status} = req.body;
+  try {
+    const order = await orders.updateOrderStatus(req.user.id, id, status);
+    if (!order) {
+      return next({ message: 'Error updating order' });
+    }
+    return res.status(200).json(order);
+  } catch (err) {
+    return next(err);
+  }
+});
+// update product_status in order by order_id and product_id
+
+router.put('/:order_id/:product_id', isLoggedIn,checkUserOwnsProduct, async (req, res, next) => {
+  const order_id = parseInt(req.params.order_id);
+  const {status} = req.body;
+  try {
+    const product_in_order = await orders.updateOrderProductStatus(req.user.id, order_id, res.locals.product.id, status);
+    if (!product_in_order) {
+      return next({ message: 'Error updating product in order' });
+    }
+    return res.status(200).json(product_in_order);
   } catch (err) {
     return next(err);
   }
