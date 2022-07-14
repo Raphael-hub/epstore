@@ -53,7 +53,7 @@ CREATE TABLE "orders" (
   "user_id" int REFERENCES "users"("id") ON DELETE CASCADE,
   "status" status DEFAULT 'pending',
   "created_at" timestamp NOT NULL
-);
+);2
 
 CREATE TABLE "orders_products" (
   "order_id" int REFERENCES "orders"("id") ON DELETE CASCADE,
