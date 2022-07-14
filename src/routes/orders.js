@@ -42,17 +42,17 @@ router.put('/:order_id', isLoggedIn,  async (req, res, next) => {
   }
 });
 
-router.put('/:order_id/:product_id', isLoggedIn,checkUserOwnsProduct,
+router.put('/:order_id/:product_id', isLoggedIn, checkUserOwnsProduct,
 async (req, res, next) => {
   const order_id = parseInt(req.params.order_id);
   const { status } = req.body;
   try {
     const product_in_order = await orders.updateOrderProductStatus(
-                                     req.user.id,
-                                     order_id,
-                                     res.locals.product.id,
-                                     status
-                                   );
+                               req.user.id,
+                               order_id,
+                               res.locals.product.id,
+                               status
+                             );
     if (!product_in_order) {
       return next({ message: 'Error updating product in order' });
     }
