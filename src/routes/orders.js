@@ -3,7 +3,6 @@ const { orders } = require('../db/helpers.js');
 const { isLoggedIn } = require('../utils/loggedIn.js');
 const checkUserOwnsProduct = require('../utils/userOwns.js');
 
-
 router.get('/', isLoggedIn, async (req, res, next) => {
   try {
     const results = await orders.getOrdersByUser(req.user.id);
@@ -31,7 +30,7 @@ router.get('/:order_id', isLoggedIn, async (req, res, next) => {
 
 router.put('/:order_id', isLoggedIn,  async (req, res, next) => {
   const id = parseInt(req.params.order_id);
-  const {status} = req.body;
+  const { status } = req.body;
   try {
     const order = await orders.updateOrderStatus(req.user.id, id, status);
     if (!order) {
@@ -42,13 +41,18 @@ router.put('/:order_id', isLoggedIn,  async (req, res, next) => {
     return next(err);
   }
 });
-// update product_status in order by order_id and product_id
 
-router.put('/:order_id/:product_id', isLoggedIn,checkUserOwnsProduct, async (req, res, next) => {
+router.put('/:order_id/:product_id', isLoggedIn,checkUserOwnsProduct,
+async (req, res, next) => {
   const order_id = parseInt(req.params.order_id);
-  const {status} = req.body;
+  const { status } = req.body;
   try {
-    const product_in_order = await orders.updateOrderProductStatus(req.user.id, order_id, res.locals.product.id, status);
+    const product_in_order = await orders.updateOrderProductStatus(
+                                     req.user.id,
+                                     order_id,
+                                     res.locals.product.id,
+                                     status
+                                   );
     if (!product_in_order) {
       return next({ message: 'Error updating product in order' });
     }
