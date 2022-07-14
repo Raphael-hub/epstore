@@ -695,7 +695,6 @@ const updateOrderProductStatus = async (user_id, order_id, product_id, status) =
     if (!orderProducts.products.find(i => i.product_id === product_id)) {
       throw new Error('Unable to find product in order');
     }
-    console.log('beginning');
     await client.query('BEGIN');
     await client.query(
       'UPDATE orders_products \
@@ -703,8 +702,7 @@ const updateOrderProductStatus = async (user_id, order_id, product_id, status) =
       WHERE order_id = $2 AND product_id = $3',
       [status, order_id, product_id]
     );
-    const newOrderProducts = await getOrderProductsFromOrder(buyer_id, order_id);
-    if (newOrderProducts.products
+    if (orderProducts.products
         .filter(p => p.status === status).length === orderProducts.length) {
       await client.query(
         'UPDATE orders \
