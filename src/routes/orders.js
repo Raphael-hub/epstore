@@ -2,6 +2,7 @@ const router = require('express').Router();
 const { orders } = require('../db/helpers.js');
 const { isLoggedIn } = require('../utils/loggedIn.js');
 const checkUserOwnsProduct = require('../utils/userOwns.js');
+const _ = require('lodash');
 
 router.get('/', isLoggedIn, async (req, res, next) => {
   try {
@@ -27,8 +28,7 @@ router.get('/:order_id', isLoggedIn, async (req, res, next) => {
     return next(err);
   }
 });
-// <
-// update order_status by order_id
+
 router.put('/:order_id', isLoggedIn,  async (req, res, next) => {
   const id = parseInt(req.params.order_id);
   const {status} = req.body;
@@ -46,7 +46,6 @@ router.put('/:order_id', isLoggedIn,  async (req, res, next) => {
 
 router.put('/:order_id/:product_id', isLoggedIn,checkUserOwnsProduct, async (req, res, next) => {
   const order_id = parseInt(req.params.order_id);
-  
   const {status} = req.body;
   try {
     const product_in_order = await orders.updateOrderProductStatus(req.user.id, order_id, res.locals.product.id, status);
@@ -58,9 +57,6 @@ router.put('/:order_id/:product_id', isLoggedIn,checkUserOwnsProduct, async (req
     return next(err);
   }
 });
-// />
-
-
 
 router.delete('/:order_id', isLoggedIn, async (req, res, next) => {
   const id = parseInt(req.params.order_id);
