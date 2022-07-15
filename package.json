@@ -6,7 +6,7 @@
   "scripts": {
     "prod": "cross-env NODE_ENV=production node src/server.js",
     "start": "node src/server.js",
-    "test": "cross-env NODE_ENV=test jest --runInBand --forceExit"
+    "test": "cross-env NODE_ENV=test jest --runInBand"
   },
   "jest": {
     "roots": [
@@ -49,7 +49,6 @@
     "chai": "^4.3.6",
     "cross-env": "^7.0.3",
     "jest": "^28.1.2",
-    "mocha": "^10.0.0",
     "supertest": "^6.2.4"
   }
 }
