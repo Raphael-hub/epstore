@@ -31,12 +31,15 @@ router.get('/:order_id', isLoggedIn, async (req, res, next) => {
 router.put('/:order_id', isLoggedIn,  async (req, res, next) => {
   const id = parseInt(req.params.order_id);
   const { status } = req.body;
+  let result;
   try {
-    const order = await orders.updateOrderStatus(req.user.id, id, status);
-    if (!order) {
-      return next({ message: 'Error updating order' });
+    if (status === 'shipped') {
+      result = await orders.shipOrder(req.user.id, id);
+      if (!result) {
+        return next({ message: 'Error updating order' });
+      }
     }
-    return res.status(200).json(order);
+    return res.status(200).json(result);
   } catch (err) {
     return next(err);
   }
@@ -46,17 +49,19 @@ router.put('/:order_id/:product_id', isLoggedIn, checkUserOwnsProduct,
 async (req, res, next) => {
   const order_id = parseInt(req.params.order_id);
   const { status } = req.body;
+  let result;
   try {
-    const product_in_order = await orders.updateOrderProductStatus(
-                               req.user.id,
-                               order_id,
-                               res.locals.product.id,
-                               status
-                             );
-    if (!product_in_order) {
-      return next({ message: 'Error updating product in order' });
+    if (status === 'shipped') {
+      const result = await orders.shipOrderProduct(
+                             req.user.id,
+                             order_id,
+                             res.locals.product.id,
+                           );
+      if (!result) {
+        return next({ message: 'Error updating product in order' });
+      }
     }
-    return res.status(200).json(product_in_order);
+    return res.status(200).json(result);
   } catch (err) {
     return next(err);
   }
