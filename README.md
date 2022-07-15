@@ -4,6 +4,14 @@ NodeJS + ExpressJS + PostgreSQL eCommerce platform for buying and selling
 items. This project is the backend server code for interacting with the
 database through an API.
 
+Currently the server can handle: user registration, sessions, account deletion
+and account details updates; listing and querying all products, posting and
+updating products and deleting them; creating, updating and clearing carts,
+viewing, and cancelling orders, checking out from cart or checking out a
+single product. Vendors can see all orders made against their products and
+have the ability to mark the individual products as shipped or the entire
+order if they own all the products in the order.
+
 Sessions are stored persistently in the sessions table of the database and
 removed after their expiration date.
 
@@ -26,7 +34,10 @@ product so any feedback is appreciated.
   - Implement ability for `admin` and `moderator` users to remove products
   - Allow `admin` users to promote `general` users to `moderator` status
 - Tests
-  - Implement unit tests to cover all database interactions and routes
+  - ~~Implement unit tests for users endpoints~~
+  - Implement unit tests for products endpoints
+  - Implement unit tests for carts endpoints
+  - Implement unit tests for orders endpoints
 - Documentation
   - Create an OpenAPI 3.0 YAML specification outlining the APIs functionality,
     usage and responses with Swagger
@@ -71,6 +82,9 @@ logs are disabled when running tests.
 
 Then you can run `npm start` and begin to interact
 with the API, as long as your PostgreSQL database is running.
+
+By running `npm prod` the server will launch in production mode and will not
+give the detailed logs of database queries.
 
 ## Database
 
