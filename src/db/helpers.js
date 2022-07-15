@@ -744,6 +744,159 @@ const shipOrderProduct = async (user_id, order_id, product_id) => {
   }
 };
 
+const disputeOrder = async (user_id, order_id) => {
+  const client = await getClient();
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
+    const result =  await query(
+      'SELECT user_id FROM orders WHERE id = $1',
+      [order_id]
+    );
+    const buyer_id = result.rows[0].user_id;
+    if (!buyer_id) {
+      throw new Error('Unable to find buyer');
+     }
+    await client.query('BEGIN');
+    await client.query(
+      "UPDATE orders \
+      SET status = 'shipped' \
+      WHERE id = $1 AND user_id = $2",
+      [order_id, buyer_id]
+    );
+    const order_products = await getOrderProductsFromOrder(buyer_id, order_id);
+    const products = order_products.products.filter(i => i.status !== 'cancelled');
+    for (let i = 0; i < products.length; i++) {
+      const vendorInfo = await client.query(
+        'SELECT user_id FROM products WHERE id = $1',
+         [products[i].product_id]
+      );
+      const vendor_id = vendorInfo.rows[0].user_id;
+      if (vendor_id !== user_id) {
+        throw new Error('User doesn\'t own all products in order' );
+      }
+      if (products[i].status === 'pending') {
+        await client.query(
+          "UPDATE orders_products \
+          SET status = 'shipped' \
+          WHERE order_id = $1 AND product_id = $2",
+          [order_id, products[i].product_id]
+        );
+      }
+    }
+    const { rows } = await client.query(
+      'WITH orders_products_seller AS ( \
+      SELECT order_id, product_id, quantity, status AS product_status, \
+      user_id AS seller_id \
+      FROM orders_products \
+      JOIN products ON product_id = products.id \
+      ) \
+      SELECT order_id, users.username AS buyer_username, name AS buyer_name, \
+      address AS buyer_address, orders.status AS order_status, product_id, \
+      quantity, product_status \
+      FROM orders_products_seller \
+      JOIN orders ON order_id = orders.id \
+      JOIN users ON orders.user_id = users.id \
+      WHERE seller_id = $1 AND order_id = $2',
+      [user_id, order_id]
+    );
+    await client.query('COMMIT');
+    return rows || null;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
+const disputeOrderProduct = async (user_id, order_id, product_id) => {
+  const client = await getClient();
+  try {
+    if (!await getUserById(user_id)) {
+      throw new Error('User does not exist');
+    }
+    const orderProductInfo = await query(
+      'SELECT user_id, product_id, status FROM orders_products \
+      JOIN products ON product_id = products.id \
+      WHERE order_id = $1 AND product_id = $2',
+      [order_id, product_id]
+    );
+    if (!orderProductInfo.rows[0].product_id) {
+      throw new Error('Product not found in order');
+    }
+    if (!orderProductInfo.rows[0].user_id === user_id) {
+      throw new Error('Product doesn\'t belong to user');
+    }
+    if (orderProductInfo.rows[0].status === 'cancelled') {
+      throw new Error('Cannot ship a cancelled product');
+    }
+    const result = await query(
+      'SELECT user_id FROM orders WHERE id = $1',
+      [order_id]
+    );
+    const buyer_id = result.rows[0].user_id;
+    if (!buyer_id) {
+      throw new Error('Unable to find buyer');
+     }
+    await client.query('BEGIN');
+    await client.query(
+      "UPDATE orders_products \
+      SET status = 'shipped' \
+      WHERE order_id = $1 AND product_id = $2",
+      [order_id, product_id]
+    );
+    const orderProducts = await getOrderProductsFromOrder(buyer_id, order_id);
+    const products = orderProducts.products.filter(i => i.status !== 'cancelled');
+    let statusCounter = 0;
+    for (let i = 0; i < products.length; i++) {
+      if (products[i].status === 'shipped') {
+        statusCounter++;
+      }
+      // error catch hack
+      if (products[i].product_id === product_id) {
+        if (products[i].status === 'pending') {
+          statusCounter++;
+        }
+      }
+    }
+    if (statusCounter === products.length) {
+      await client.query(
+        "UPDATE orders \
+        SET status = 'shipped' \
+        WHERE id = $1 AND user_id = $2",
+        [order_id, buyer_id]
+      );
+    }
+    const { rows } = await client.query(
+      'WITH orders_products_seller AS ( \
+      SELECT order_id, product_id, quantity, status AS product_status, \
+      user_id AS seller_id \
+      FROM orders_products \
+      JOIN products ON product_id = products.id \
+      ) \
+      SELECT order_id, users.username AS buyer_username, name AS buyer_name, \
+      address AS buyer_address, orders.status AS order_status, product_id, \
+      quantity, product_status \
+      FROM orders_products_seller \
+      JOIN orders ON order_id = orders.id \
+      JOIN users ON orders.user_id = users.id \
+      WHERE seller_id = $1 AND order_id = $2 AND product_id = $3',
+      [user_id, order_id, product_id]
+    );
+    await client.query('COMMIT');
+    return rows[0] || null;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
+
+
 module.exports = {
   users: {
     getUserById,
@@ -780,5 +933,7 @@ module.exports = {
     cancelOrderProduct,
     shipOrder,
     shipOrderProduct,
+    disputeOrder, 
+    disputeOrderProduct
   },
 };
