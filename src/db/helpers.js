@@ -353,7 +353,8 @@ const getOrderById = async (user_id, order_id) => {
     }
     const { rows } = await query(
       'SELECT id, status, created_at FROM orders \
-      WHERE id = $1 AND user_id = $2',
+      WHERE id = $1 AND user_id = $2 \
+      ORDER BY id DESC',
       [order_id, user_id]
     );
     return rows[0] || null;
@@ -369,7 +370,8 @@ const getOrdersByUser = async (user_id) => {
     }
     const { rows } = await query(
       'SELECT id, status, created_at FROM orders \
-      WHERE user_id = $1',
+      WHERE user_id = $1 \
+      ORDER BY id DESC',
       [user_id]
     );
     return rows || null;
@@ -591,7 +593,7 @@ const cancelOrderProduct = async (user_id, order_id, product_id) => {
   }
 };
 
-const updateOrderStatus = async (user_id, order_id, status) => {
+const shipOrder = async (user_id, order_id) => {
   const client = await getClient();
   try {
     if (!await getUserById(user_id)) {
@@ -605,35 +607,30 @@ const updateOrderStatus = async (user_id, order_id, status) => {
     if (!buyer_id) {
       throw new Error('Unable to find buyer');
      }
-    if (status === 'cancelled') {
-      return await cancelOrderProduct(buyer_id, order_id, product_id);
-    }
-    const statusList = ['shipped', 'disputed'];
-    if (!statusList.includes(status)) {
-      throw new Error('Unknown status');
-    }
     await client.query('BEGIN');
     await client.query(
-      'UPDATE orders \
-      SET status = $1\
-      WHERE id = $2 AND user_id = $3',
-      [status, order_id, user_id]
+      "UPDATE orders \
+      SET status = 'shipped' \
+      WHERE id = $1 AND user_id = $2",
+      [order_id, buyer_id]
     );
-    const products = await getOrderProductsFromOrder(buyer_id, order_id);
+    const order_products = await getOrderProductsFromOrder(buyer_id, order_id);
+    const products = order_products.products.filter(i => i.status !== 'cancelled');
     for (let i = 0; i < products.length; i++) {
-      const vendor_id = await client.query(
+      const vendorInfo = await client.query(
         'SELECT user_id FROM products WHERE id = $1',
          [products[i].product_id]
       );
+      const vendor_id = vendorInfo.rows[0].user_id;
       if (vendor_id !== user_id) {
         throw new Error('User doesn\'t own all products in order' );
       }
       if (products[i].status === 'pending') {
         await client.query(
-          'UPDATE orders_products \
-          SET status = $1 \
-          WHERE order_id = $2 AND product_id = $3',
-          [status, order_id, products[i].product_id]
+          "UPDATE orders_products \
+          SET status = 'shipped' \
+          WHERE order_id = $1 AND product_id = $2",
+          [order_id, products[i].product_id]
         );
       }
     }
@@ -663,18 +660,26 @@ const updateOrderStatus = async (user_id, order_id, status) => {
   }
 };
 
-const updateOrderProductStatus = async (user_id, order_id, product_id, status) => {
+const shipOrderProduct = async (user_id, order_id, product_id) => {
   const client = await getClient();
   try {
     if (!await getUserById(user_id)) {
       throw new Error('User does not exist');
     }
-    if (!await getProductById(product_id)) {
-      throw new Error('Product does not exist');
+    const orderProductInfo = await query(
+      'SELECT user_id, product_id, status FROM orders_products \
+      JOIN products ON product_id = products.id \
+      WHERE order_id = $1 AND product_id = $2',
+      [order_id, product_id]
+    );
+    if (!orderProductInfo.rows[0].product_id) {
+      throw new Error('Product not found in order');
     }
-    const product = await getProductById(product_id);
-    if (!product.user_id === user_id) {
-      throw new Error('Product doesn\'t belong to user')
+    if (!orderProductInfo.rows[0].user_id === user_id) {
+      throw new Error('Product doesn\'t belong to user');
+    }
+    if (orderProductInfo.rows[0].status === 'cancelled') {
+      throw new Error('Cannot ship a cancelled product');
     }
     const result = await query(
       'SELECT user_id FROM orders WHERE id = $1',
@@ -684,31 +689,33 @@ const updateOrderProductStatus = async (user_id, order_id, product_id, status) =
     if (!buyer_id) {
       throw new Error('Unable to find buyer');
      }
-    if (status === 'cancelled') {
-      return await cancelOrder(buyer_id, order_id);
-    }
-    const statusList = ['shipped', 'disputed'];
-    if (!statusList.includes(status)) {
-      throw new Error('Unknown status');
-    }
-    const orderProducts = await getOrderProductsFromOrder(buyer_id, order_id);
-    if (!orderProducts.products.find(i => i.product_id === product_id)) {
-      throw new Error('Unable to find product in order');
-    }
     await client.query('BEGIN');
     await client.query(
-      'UPDATE orders_products \
-      SET status = $1 \
-      WHERE order_id = $2 AND product_id = $3',
-      [status, order_id, product_id]
+      "UPDATE orders_products \
+      SET status = 'shipped' \
+      WHERE order_id = $1 AND product_id = $2",
+      [order_id, product_id]
     );
-    if (orderProducts.products
-        .filter(p => p.status === status).length === orderProducts.length) {
+    const orderProducts = await getOrderProductsFromOrder(buyer_id, order_id);
+    const products = orderProducts.products.filter(i => i.status !== 'cancelled');
+    let statusCounter = 0;
+    for (let i = 0; i < products.length; i++) {
+      if (products[i].status === 'shipped') {
+        statusCounter++;
+      }
+      // error catch hack
+      if (products[i].product_id === product_id) {
+        if (products[i].status === 'pending') {
+          statusCounter++;
+        }
+      }
+    }
+    if (statusCounter === products.length) {
       await client.query(
-        'UPDATE orders \
-        SET status = $1 \
-        WHERE id = $2 AND user_id = $3',
-        [status, order_id, buyer_id]
+        "UPDATE orders \
+        SET status = 'shipped' \
+        WHERE id = $1 AND user_id = $2",
+        [order_id, buyer_id]
       );
     }
     const { rows } = await client.query(
@@ -771,7 +778,7 @@ module.exports = {
     createOrderFromProduct,
     cancelOrder,
     cancelOrderProduct,
-    updateOrderStatus,
-    updateOrderProductStatus,
+    shipOrder,
+    shipOrderProduct,
   },
 };
