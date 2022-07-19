@@ -121,6 +121,9 @@ const getProductById = async (id) => {
       'SELECT * FROM products WHERE id = $1',
       [id]
     );
+    if (!rows[0]) {
+      throw CustomException('Product not found', 400);
+    }
     return rows[0] || null;
   } catch (err) {
     throw err;
@@ -223,9 +226,6 @@ const updateProductById = async (user_id, product_id, updates) => {
   const { name, description, price, currency, stock } = updates;
   try {
     const product = await getProductById(product_id);
-    if (!product) {
-      throw CustomException('Product not found', 400);
-    }
     if (product.user_id !== user_id) {
       throw CustomException('User cannot alter this product', 403);
     }
@@ -244,9 +244,6 @@ const updateProductById = async (user_id, product_id, updates) => {
 const deleteProductById = async (user_id, product_id) => {
   try {
     const product = await getProductById(product_id);
-    if (!product) {
-      throw CustomException('Product not found', 400);
-    }
     if (product.user_id !== user_id) {
       throw CustomException("Can't delete other user's products", 403);
     }
@@ -263,7 +260,7 @@ const deleteProductById = async (user_id, product_id) => {
 const getUserCart = async (user_id) => {
   try {
     if (!await getUserById(user_id)) {
-      throw CustomException('User does not exist', 400);
+      throw CustomException('User not found', 400);
     }
     const { rows } = await query(
       'SELECT product_id, quantity FROM users_carts \
@@ -279,10 +276,10 @@ const getUserCart = async (user_id) => {
 const addProductToCart = async (user_id, product_id, quantity) => {
   try {
     if (!await getUserById(user_id)) {
-      throw CustomException('User does not exist', 400);
+      throw CustomException('User not found', 400);
     }
     if (!await getProductById(product_id)) {
-      throw CustomException('Product does not exist', 400);
+      throw CustomException('Product not found', 400);
     }
     const { rows } = await query(
       'INSERT INTO users_carts \
@@ -299,10 +296,10 @@ const addProductToCart = async (user_id, product_id, quantity) => {
 const updateProductInCart = async (user_id, product_id, quantity) => {
   try {
     if (!await getUserById(user_id)) {
-      throw CustomException('User does not exist', 400);
+      throw CustomException('User not found', 400);
     }
     if (!await getProductById(product_id)) {
-      throw CustomException('Product does not exist', 400);
+      throw CustomException('Product not found', 400);
     }
     const { rows } = await query(
       'UPDATE users_carts \
@@ -320,10 +317,10 @@ const updateProductInCart = async (user_id, product_id, quantity) => {
 const removeProductFromCart = async (user_id, product_id) => {
   try {
     if (!await getUserById(user_id)) {
-      throw CustomException('User does not exist', 400);
+      throw CustomException('User not found', 400);
     }
     if (!await getProductById(product_id)) {
-      throw CustomException('Product does not exist', 400);
+      throw CustomException('Product not found', 400);
     }
     const result = await query(
       'DELETE FROM users_carts \
@@ -339,7 +336,7 @@ const removeProductFromCart = async (user_id, product_id) => {
 const emptyUserCart = async (user_id) => {
   try {
     if (!await getUserById(user_id)) {
-      throw CustomException('User does not exist', 400);
+      throw CustomException('User not found', 400);
     }
     const result = await query(
       'DELETE FROM users_carts \
@@ -355,7 +352,7 @@ const emptyUserCart = async (user_id) => {
 const getOrderById = async (user_id, order_id) => {
   try {
     if (!await getUserById(user_id)) {
-      throw CustomException('User does not exist', 400);
+      throw CustomException('User not found', 400);
     }
     const { rows } = await query(
       'SELECT id, status, created_at FROM orders \
@@ -372,7 +369,7 @@ const getOrderById = async (user_id, order_id) => {
 const getOrdersByUser = async (user_id) => {
   try {
     if (!await getUserById(user_id)) {
-      throw CustomException('User does not exist', 400);
+      throw CustomException('User not found', 400);
     }
     const { rows } = await query(
       'SELECT id, status, created_at FROM orders \
@@ -414,7 +411,7 @@ const createOrderFromCart = async (user_id) => {
   const client = await getClient();
   try {
     if (!await getUserById(user_id)) {
-      throw CustomException('User does not exist', 400);
+      throw CustomException('User not found', 400);
     }
     const cart = await getUserCart(user_id);
     if (cart.length === 0) {
@@ -430,9 +427,6 @@ const createOrderFromCart = async (user_id) => {
     let items = [];
     for (let i = 0; i < cart.length; i++) {
       let product = await getProductById(cart[i].product_id);
-      if (!product) {
-        throw CustomException('Product does not exist', 400);
-      }
       if (product.stock - cart[i].quantity < 0) {
         throw CustomException('Product does not have enough stock', 400);
       }
@@ -467,12 +461,9 @@ const createOrderFromProduct = async (user_id, product_id, quantity) => {
   const client = await getClient();
   try {
     if (!await getUserById(user_id)) {
-      throw CustomException('User does not exist', 400);
+      throw CustomException('User not found', 400);
     }
     const product = await getProductById(product_id);
-    if (!product) {
-      throw CustomException('Product does not exist', 400);
-    }
     if (product.stock - quantity < 0) {
       throw CustomException('Product does not have enough stock', 400);
     }
@@ -507,7 +498,7 @@ const cancelOrder = async (user_id, order_id) => {
   const client = await getClient();
   try {
     if (!await getUserById(user_id)) {
-      throw CustomException('User does not exist', 400);
+      throw CustomException('User not found', 400);
     }
     const order = await getOrderById(user_id, order_id);
     if (!order) {
@@ -531,9 +522,6 @@ const cancelOrder = async (user_id, order_id) => {
     );
     for (let i = 0; i < items.rows.length; i++) {
       let product = await getProductById(items.rows[i].product_id);
-      if (!product) {
-        throw CustomException('Product does not exist', 400);
-      }
       await client.query(
         'UPDATE products SET stock = stock + $1 \
         WHERE id = $2',
@@ -559,7 +547,7 @@ const cancelOrderProduct = async (user_id, order_id, product_id) => {
   const client = await getClient();
   try {
     if (!await getUserById(user_id)) {
-      throw CustomException('User does not exist', 400);
+      throw CustomException('User not found', 400);
     }
     const order = await getOrderById(user_id, order_id);
     if (!order) {
@@ -601,7 +589,7 @@ const shipOrder = async (user_id, order_id) => {
   const client = await getClient();
   try {
     if (!await getUserById(user_id)) {
-      throw CustomException('User does not exist', 400);
+      throw CustomException('User not found', 400);
     }
     const result =  await query(
       'SELECT user_id FROM orders WHERE id = $1',
@@ -668,7 +656,7 @@ const shipOrderProduct = async (user_id, order_id, product_id) => {
   const client = await getClient();
   try {
     if (!await getUserById(user_id)) {
-      throw CustomException('User does not exist', 400);
+      throw CustomException('User not found', 400);
     }
     const orderProductInfo = await query(
       'SELECT user_id, product_id, status FROM orders_products \
