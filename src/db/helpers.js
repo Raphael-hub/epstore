@@ -245,7 +245,7 @@ const deleteProductById = async (user_id, product_id) => {
   try {
     const product = await getProductById(product_id);
     if (product.user_id !== user_id) {
-      throw CustomException("Can't delete other user's products", 403);
+      throw CustomException('User cannot alter this product', 403);
     }
     const result = await query(
       'DELETE FROM products WHERE id = $1',
