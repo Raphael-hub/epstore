@@ -371,7 +371,24 @@ describe('Product endpoints', () => {
           });
       });
 
-      it('return 500 and error message when product_id not found',
+      it('return 400 and error message when product_id not found',
+      (done) => {
+        agent
+          .put('/products/999999')
+          .set('Accept', 'application/json')
+          .send({ stock: 100 })
+          .expect(400)
+          .end((err, res) => {
+            if (err) {
+              return done(err);
+            }
+            expect(res.headers['content-type']).to.match(/json/);
+            expect(res.body.error).to.equal('Product not found');
+            return done();
+          });
+      });
+
+      it('return 500 and error message when product_id is invalid',
       (done) => {
         agent
           .put('/products/0')
