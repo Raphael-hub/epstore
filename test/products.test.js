@@ -10,6 +10,13 @@ const testUser = {
   name: 'Supertest Test'
 };
 
+const newUser = {
+  username: 'supertest-p-new',
+  password: 'b1gl3g3nd',
+  email: 'st-p-new@example.com',
+  name: 'Supertest Test'
+};
+
 const productOne = {
   name: "UK Power Adaptor",
   description: "A power adaptor for charging laptops with a UK wall plug",
@@ -26,7 +33,10 @@ const productTwo = {
   stock: 35
 };
 
+let product_id;
+
 const agent = request.agent(server);
+const secondAgent = request.agent(server);
 
 describe('Product endpoints', () => {
   // create supertest-test user for product tests
@@ -129,7 +139,8 @@ describe('Product endpoints', () => {
           });
       });
 
-      it('return 200 and a list of all products', async () => {
+      it('return 200 and a list of all products',
+      async () => {
         const res = await request(server)
           .get('/products')
           .set('Accept', 'application/json')
@@ -278,7 +289,8 @@ describe('Product endpoints', () => {
     });
 
     describe('success', () => {
-      it('return 201 and product object', (done) => {
+      it('return 201 and product object',
+      (done) => {
         agent
           .post('/products')
           .set('Accept', 'application/json')
@@ -291,7 +303,88 @@ describe('Product endpoints', () => {
             expect(res.headers['content-type']).to.match(/json/);
             expect(res.body.product).to.not.be.null;
             expect(res.body.product.name).to.equal(productOne.name)
+            product_id = res.body.product.id;
+            return done();
+          });
+      });
+    });
+  });
+
+  describe('PUT /products/:product_id', () => {
+    beforeAll((done) => {
+      secondAgent
+        .post('/register')
+        .set('Accept', 'application/json')
+        .send(newUser)
+        .expect(302)
+        .end((err, res) => {
+          if (err) {
             return done(err);
+          }
+          expect(res.headers['location']).to.equal('/profile');
+          return done();
+        });
+    });
+
+    afterAll((done) => {
+      secondAgent
+        .delete('/profile')
+        .set('Accept', 'application/json')
+        .send()
+        .expect(200)
+        .end((err, res) => {
+          if (err) {
+            return done(err);
+          }
+          expect(res.headers['content-type']).to.match(/json/);
+          expect(res.body.info).to.equal('Deleted user');
+          return done();
+        });
+    });
+
+    describe('failure', () => {
+      it('return 401 and error message when not logged in',
+      async () => {
+        const res = await request(server)
+          .put(`/products/${product_id}`)
+          .set('Accept', 'application/json')
+          .send({ stock: 100 });
+        expect(res.headers['content-type']).to.match(/json/);
+        expect(res.status).to.equal(401);
+        expect(res.body.error).to.equal('Not logged in');
+      });
+
+      it("return 403 and error message when user doesn't own product",
+      (done) => {
+        secondAgent
+          .put(`/products/${product_id}`)
+          .set('Accept', 'application/json')
+          .send({ stock: 100 })
+          .expect(403)
+          .end((err, res) => {
+            if (err) {
+              return done(err);
+            }
+            expect(res.headers['content-type']).to.match(/json/);
+            expect(res.body.error).to.equal('User cannot alter this product');
+            return done();
+          });
+      });
+
+      it('return 500 and error message when product_id not found',
+      (done) => {
+        agent
+          .put('/products/0')
+          .set('Accept', 'application/json')
+          .send({ stock: 100 })
+          .expect(500)
+          .end((err, res) => {
+            if (err) {
+              return done(err);
+            }
+            expect(res.headers['content-type']).to.match(/json/);
+            expect(res.body.error).to.equal('Invalid product id');
+            return done();
           });
       });
     });
