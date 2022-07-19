@@ -227,7 +227,7 @@ const updateProductById = async (user_id, product_id, updates) => {
       throw CustomException('Product not found', 400);
     }
     if (product.user_id !== user_id) {
-      throw CustomException("Can't update other user's products", 401);
+      throw CustomException('User cannot alter this product', 403);
     }
     const { rows } = await query(
       'UPDATE products \
@@ -248,7 +248,7 @@ const deleteProductById = async (user_id, product_id) => {
       throw CustomException('Product not found', 400);
     }
     if (product.user_id !== user_id) {
-      throw CustomException("Can't delete other user's products", 401);
+      throw CustomException("Can't delete other user's products", 403);
     }
     const result = await query(
       'DELETE FROM products WHERE id = $1',
@@ -502,8 +502,6 @@ const createOrderFromProduct = async (user_id, product_id, quantity) => {
     client.release();
   }
 };
-
-
 
 const cancelOrder = async (user_id, order_id) => {
   const client = await getClient();
