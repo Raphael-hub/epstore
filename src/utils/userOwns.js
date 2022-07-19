@@ -8,7 +8,7 @@ const checkUserOwnsProduct = async (req, res, next) => {
   try {
     const product = await products.getProductById(id);
     if (!product) {
-      return next({ message: 'Error fetching product' });
+      return next({ message: 'Product not found', status: 400 });
     }
     if (product.user_id !== req.user.id) {
       return res.status(403).json({ error: 'User cannot alter this product' });
