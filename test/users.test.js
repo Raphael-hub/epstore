@@ -306,6 +306,38 @@ describe('User endpoints', () => {
             return done();
           });
       });
+
+      it('return 403 when new email already in use', (done) => {
+        agent
+          .put('/profile')
+          .set('Accept', 'application/json')
+          .send({ email: newUser.email })
+          .expect(403)
+          .end((err, res) => {
+            if (err) {
+              return done(err);
+            }
+            expect(res.headers['content-type']).to.match(/json/);
+            expect(res.body.error).to.equal('User with that email already exists');
+            return done();
+          });
+      });
+
+      it('return 403 when new username already in use', (done) => {
+        agent
+          .put('/profile')
+          .set('Accept', 'application/json')
+          .send({ username: newUser.username })
+          .expect(403)
+          .end((err, res) => {
+            if (err) {
+              return done(err);
+            }
+            expect(res.headers['content-type']).to.match(/json/);
+            expect(res.body.error).to.equal('User with that username already exists');
+            return done();
+          });
+      });
     });
 
     describe('success', () => {
