@@ -31,11 +31,11 @@ product so any feedback is appreciated.
   - Implement `disputed` order status functionality
 - User roles
   - Implement ability for `admin` users to view details on all users and orders
-  - Implement ability for `admin` and `moderator` users to remove products
-  - Allow `admin` users to promote `general` users to `moderator` status
+  - Implement ability for `admin` users to remove any product
+  - Implement ability for `admin` users to view and settle disputes
 - Tests
   - ~~Implement unit tests for users endpoints~~
-  - Implement unit tests for products endpoints
+  - ~~Implement unit tests for products endpoints~~
   - Implement unit tests for carts endpoints
   - Implement unit tests for orders endpoints
 - Documentation
@@ -85,6 +85,11 @@ with the API, as long as your PostgreSQL database is running.
 
 By running `npm prod` the server will launch in production mode and will not
 give the detailed logs of database queries.
+
+For Linux+systemd users the file `setup.sh` will do the initial setup
+automatically. It requires PostgreSQL 14.4 to be installed and running but
+will initiate the database - run the tests and then re-initiate the database
+for a clean start.
 
 ## Database
 
