@@ -761,7 +761,7 @@ const disputeOrder = async (user_id, order_id) => {
     await client.query('BEGIN');
     await client.query(
       "UPDATE orders \
-      SET status = 'shipped' \
+      SET status = 'disputed' \
       WHERE id = $1 AND user_id = $2",
       [order_id, buyer_id]
     );
