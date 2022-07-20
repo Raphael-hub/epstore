@@ -1,6 +1,5 @@
 CREATE TYPE "account_role" AS ENUM (
   'general',
-  'moderator',
   'admin'
 );
 

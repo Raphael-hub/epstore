@@ -42,20 +42,20 @@ done
 shift $((OPTIND-1))
 
 setupdb() {
-  cmd="$( which psql )"
-  if [[ -z cmd ]]; then
+  if [ -z "$( which psql )" ]
+  then
     echo "PostgreSQL (psql) not installed"
     exit 1
   fi
 
-  cmd="$( psql -V | sed 's/.*\s//' )"
-  if [[ ! $cmd =~ "14.4" ]]; then
+  if [ "$( psql -V | sed 's/.*\s//' )" != "14.4" ]
+  then
     echo "PostgreSQL 14.4 required"
     exit 1
   fi
 
-  cmd="$( systemctl status postgresql-14.service | grep -o 'running' )"
-  if [[ ! $cmd =~ "running" ]]; then
+  if [ -n "$( systemctl status postgresql-14.service | grep -o 'inactive' )" ]
+  then
     echo "PostgreSQL not running"
     exit 1
   fi
@@ -75,13 +75,8 @@ tests() {
   echo "--- FINISHED TESTING ---"
 }
 
-main() {
-  npm i
-  setupdb
-  echo
-  tests
-  echo
-  setupdb
-}
-
-main
+setupdb
+echo
+tests
+echo
+setupdb
