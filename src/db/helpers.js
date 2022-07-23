@@ -633,9 +633,8 @@ const shipOrder = async (user_id, order_id) => {
       FROM orders_products \
       JOIN products ON product_id = products.id \
       ) \
-      SELECT order_id, users.username AS buyer_username, name AS buyer_name, \
-      address AS buyer_address, orders.status AS order_status, product_id, \
-      quantity, product_status \
+      SELECT order_id AS id, users.username AS buyer_username, name AS buyer_name, \
+      address AS buyer_address, orders.status AS status \
       FROM orders_products_seller \
       JOIN orders ON order_id = orders.id \
       JOIN users ON orders.user_id = users.id \
