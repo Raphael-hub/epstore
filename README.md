@@ -101,4 +101,13 @@ relationship diagram
 ## Tests
 
 You can run the current test suite with `npm test` - make sure that postgres is
-running first and initialised with the `eCommerce.sql` file beforehand.
+running first and initialised with the `eCommerce.sql` file beforehand. Or use
+the `setup.sh` script to automatically initiate the database, run the tests
+and re-initialise the database once done.
+
+The test suite may return errors if the database has already been used
+(products are already listed) - so it is better to run the tests before using
+the database and then re-initialising the database after for a clean slate.
+The test suite will clean up all users/products/orders that it creates but if
+not re-initialised the primary keys (users.id, products.id, orders.id, etc.)
+will not start at 1.
