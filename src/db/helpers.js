@@ -485,7 +485,7 @@ const createOrderFromProduct = async (user_id, product_id, quantity) => {
       [quantity, product_id]
     );
     await client.query('COMMIT');
-    return { order: order.rows[0], products: items.rows[0] };
+    return { order: order.rows[0], products: items.rows };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
