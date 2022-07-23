@@ -643,7 +643,7 @@ const shipOrder = async (user_id, order_id) => {
       [user_id, order_id]
     );
     await client.query('COMMIT');
-    return rows || null;
+    return rows[0] || null;
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
