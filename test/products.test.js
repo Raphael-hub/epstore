@@ -141,7 +141,8 @@ describe('Product endpoints', () => {
         expect(res.headers['content-type']).to.match(/json/);
         expect(res.status).to.equal(200);
         expect(res.body.products).to.not.be.null;
-        expect(res.body.products[0].name).to.equal(productTwo.name);
+        const products = res.body.products.filter(p => p.name === productTwo.name);
+        expect(products).to.not.be.null;
       });
 
       it('return 200 and a list of products ordered and sorted using url query',
@@ -153,8 +154,13 @@ describe('Product endpoints', () => {
         expect(res.headers['content-type']).to.match(/json/);
         expect(res.status).to.equal(200);
         expect(res.body.products).to.not.be.null;
-        expect(res.body.products[0].name).to.equal(productOne.name);
-        expect(res.body.products[1].name).to.equal(productTwo.name);
+        const products = res.body.products.filter(p => {
+          if (p.name === productOne.name || p.name === productTwo.name) {
+            return true;
+          }
+        });
+        expect(products.length).to.equal(2);
+        expect(Number(products[0].price)).to.be.above(Number(products[1].price));
       });
 
       it('return 200 and a list of products sorted by newest first with invalid queries',
@@ -166,8 +172,17 @@ describe('Product endpoints', () => {
         expect(res.headers['content-type']).to.match(/json/);
         expect(res.status).to.equal(200);
         expect(res.body.products).to.not.be.null;
-        expect(res.body.products[0].name).to.equal(productTwo.name);
-        expect(res.body.products[1].name).to.equal(productOne.name);
+        const products = res.body.products.filter(p => {
+          if (p.name === productOne.name || p.name === productTwo.name) {
+            return true;
+          }
+        });
+        expect(products.length).to.equal(2);
+        let isNewest = false;
+        if (products[0].listed_at >= products[1].listed_at) {
+          isNewest = true;
+        }
+        expect(isNewest).to.equal(true);
       });
     });
   });
