@@ -520,8 +520,13 @@ const cancelOrder = async (user_id, order_id) => {
       'SELECT * FROM orders_products WHERE order_id = $1',
       [order_id]
     );
+    const order_products = await getOrderProductsFromOrder(user_id, order_id);
     for (let i = 0; i < items.rows.length; i++) {
       let product = await getProductById(items.rows[i].product_id);
+      let product_info = order_products.products.find(p => p.product_id === items.rows[i].product_id);
+      if (product_info.status === 'shipped') {
+        throw CustomException("Can't cancel an order being processed", 403);
+      }
       await client.query(
         'UPDATE products SET stock = stock + $1 \
         WHERE id = $2',
@@ -534,7 +539,7 @@ const cancelOrder = async (user_id, order_id) => {
       );
     }
     await client.query('COMMIT');
-    return rows || null;
+    return rows[0] || null;
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
