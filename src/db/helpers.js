@@ -576,7 +576,7 @@ const cancelOrderProduct = async (user_id, order_id, product_id) => {
       [rows[0].quantity, product_id]
     );
     await client.query('COMMIT');
-    return rows || null;
+    return rows[0] || null;
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
@@ -663,11 +663,11 @@ const shipOrderProduct = async (user_id, order_id, product_id) => {
       WHERE order_id = $1 AND product_id = $2',
       [order_id, product_id]
     );
-    if (!orderProductInfo.rows[0].product_id) {
+    if (!orderProductInfo.rows[0]) {
       throw CustomException('Product not found in order', 400);
     }
     if (!orderProductInfo.rows[0].user_id === user_id) {
-      throw CustomException("Product doesn't belong to user", 403);
+      throw CustomException("User cannot alter this product", 403);
     }
     if (orderProductInfo.rows[0].status === 'cancelled') {
       throw CustomException('Cannot ship a cancelled product', 403);
