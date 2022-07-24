@@ -575,6 +575,20 @@ const cancelOrderProduct = async (user_id, order_id, product_id) => {
       WHERE order_id = $1 AND product_id = $2 RETURNING *",
       [order_id, product_id]
     );
+    // check if all products in order are not cancelled
+    const not_cancelled = orders_products.products.filter(p => {
+      if (p.status !== 'cancelled' && p.product_id !== product_id) {
+        return true;
+      }
+    });
+    // set order status to cancelled
+    if (not_cancelled.length === 0) {
+      await client.query(
+        "UPDATE orders SET status = 'cancelled' \
+        WHERE user_id = $1 AND id = $2",
+        [user_id, order_id]
+      );
+    }
     await client.query(
       'UPDATE products SET stock = stock + $1 \
       WHERE id = $2',
