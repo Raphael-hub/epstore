@@ -37,7 +37,7 @@ product so any feedback is appreciated.
   - ~~Implement unit tests for users endpoints~~
   - ~~Implement unit tests for products endpoints~~
   - Implement unit tests for carts endpoints
-  - Implement unit tests for orders endpoints
+  - ~~Implement unit tests for orders endpoints~~
 - Documentation
   - Create an OpenAPI 3.0 YAML specification outlining the APIs functionality,
     usage and responses with Swagger
