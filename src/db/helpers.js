@@ -485,7 +485,7 @@ const createOrderFromProduct = async (user_id, product_id, quantity) => {
       [quantity, product_id]
     );
     await client.query('COMMIT');
-    return { order: order.rows[0], products: items.rows[0] };
+    return { order: order.rows[0], products: items.rows };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
@@ -520,8 +520,13 @@ const cancelOrder = async (user_id, order_id) => {
       'SELECT * FROM orders_products WHERE order_id = $1',
       [order_id]
     );
+    const order_products = await getOrderProductsFromOrder(user_id, order_id);
     for (let i = 0; i < items.rows.length; i++) {
       let product = await getProductById(items.rows[i].product_id);
+      let product_info = order_products.products.find(p => p.product_id === items.rows[i].product_id);
+      if (product_info.status === 'shipped') {
+        throw CustomException("Can't cancel an order being processed", 403);
+      }
       await client.query(
         'UPDATE products SET stock = stock + $1 \
         WHERE id = $2',
@@ -534,7 +539,7 @@ const cancelOrder = async (user_id, order_id) => {
       );
     }
     await client.query('COMMIT');
-    return rows || null;
+    return rows[0] || null;
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
@@ -570,13 +575,27 @@ const cancelOrderProduct = async (user_id, order_id, product_id) => {
       WHERE order_id = $1 AND product_id = $2 RETURNING *",
       [order_id, product_id]
     );
+    // check if all products in order are not cancelled
+    const not_cancelled = orders_products.products.filter(p => {
+      if (p.status !== 'cancelled' && p.product_id !== product_id) {
+        return true;
+      }
+    });
+    // set order status to cancelled
+    if (not_cancelled.length === 0) {
+      await client.query(
+        "UPDATE orders SET status = 'cancelled' \
+        WHERE user_id = $1 AND id = $2",
+        [user_id, order_id]
+      );
+    }
     await client.query(
       'UPDATE products SET stock = stock + $1 \
       WHERE id = $2',
       [rows[0].quantity, product_id]
     );
     await client.query('COMMIT');
-    return rows || null;
+    return rows[0] || null;
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
@@ -633,9 +652,8 @@ const shipOrder = async (user_id, order_id) => {
       FROM orders_products \
       JOIN products ON product_id = products.id \
       ) \
-      SELECT order_id, users.username AS buyer_username, name AS buyer_name, \
-      address AS buyer_address, orders.status AS order_status, product_id, \
-      quantity, product_status \
+      SELECT order_id AS id, users.username AS buyer_username, name AS buyer_name, \
+      address AS buyer_address, orders.status AS status \
       FROM orders_products_seller \
       JOIN orders ON order_id = orders.id \
       JOIN users ON orders.user_id = users.id \
@@ -643,7 +661,7 @@ const shipOrder = async (user_id, order_id) => {
       [user_id, order_id]
     );
     await client.query('COMMIT');
-    return rows || null;
+    return rows[0] || null;
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
@@ -664,11 +682,11 @@ const shipOrderProduct = async (user_id, order_id, product_id) => {
       WHERE order_id = $1 AND product_id = $2',
       [order_id, product_id]
     );
-    if (!orderProductInfo.rows[0].product_id) {
+    if (!orderProductInfo.rows[0]) {
       throw CustomException('Product not found in order', 400);
     }
     if (!orderProductInfo.rows[0].user_id === user_id) {
-      throw CustomException("Product doesn't belong to user", 403);
+      throw CustomException("User cannot alter this product", 403);
     }
     if (orderProductInfo.rows[0].status === 'cancelled') {
       throw CustomException('Cannot ship a cancelled product', 403);

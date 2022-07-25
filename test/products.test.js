@@ -33,7 +33,7 @@ const productTwo = {
   stock: 35
 };
 
-let product_id;
+let product_ids = [];
 
 const agent = request.agent(server);
 const secondAgent = request.agent(server);
@@ -103,6 +103,7 @@ describe('Product endpoints', () => {
             expect(res.headers['content-type']).to.match(/json/);
             expect(res.body.product).to.not.be.null;
             expect(res.body.product.name).to.equal(productOne.name);
+            product_ids.push(res.body.product.id);
             agent
               .post('/products')
               .set('Accept', 'application/json')
@@ -115,6 +116,7 @@ describe('Product endpoints', () => {
                 expect(res.headers['content-type']).to.match(/json/);
                 expect(res.body.product).to.not.be.null;
                 expect(res.body.product.name).to.equal(productTwo.name);
+                product_ids.push(res.body.product.id);
                 return done();
               });
           });
@@ -141,7 +143,8 @@ describe('Product endpoints', () => {
         expect(res.headers['content-type']).to.match(/json/);
         expect(res.status).to.equal(200);
         expect(res.body.products).to.not.be.null;
-        expect(res.body.products[0].name).to.equal(productTwo.name);
+        const products = res.body.products.filter(p => p.id === product_ids[1]);
+        expect(products).to.not.be.null;
       });
 
       it('return 200 and a list of products ordered and sorted using url query',
@@ -153,8 +156,13 @@ describe('Product endpoints', () => {
         expect(res.headers['content-type']).to.match(/json/);
         expect(res.status).to.equal(200);
         expect(res.body.products).to.not.be.null;
-        expect(res.body.products[0].name).to.equal(productOne.name);
-        expect(res.body.products[1].name).to.equal(productTwo.name);
+        const products = res.body.products.filter(p => {
+          if (product_ids.includes(p.id)) {
+            return true;
+          }
+        });
+        expect(products.length).to.equal(2);
+        expect(Number(products[0].price)).to.be.above(Number(products[1].price));
       });
 
       it('return 200 and a list of products sorted by newest first with invalid queries',
@@ -166,8 +174,17 @@ describe('Product endpoints', () => {
         expect(res.headers['content-type']).to.match(/json/);
         expect(res.status).to.equal(200);
         expect(res.body.products).to.not.be.null;
-        expect(res.body.products[0].name).to.equal(productTwo.name);
-        expect(res.body.products[1].name).to.equal(productOne.name);
+        const products = res.body.products.filter(p => {
+          if (product_ids.includes(p.id)) {
+            return true;
+          }
+        });
+        expect(products.length).to.equal(2);
+        let isNewest = false;
+        if (products[0].listed_at >= products[1].listed_at) {
+          isNewest = true;
+        }
+        expect(isNewest).to.equal(true);
       });
     });
   });
@@ -284,7 +301,7 @@ describe('Product endpoints', () => {
             expect(res.headers['content-type']).to.match(/json/);
             expect(res.body.product).to.not.be.null;
             expect(res.body.product.name).to.equal(productOne.name)
-            product_id = res.body.product.id;
+            product_ids.push(res.body.product.id)
             return done();
           });
       });
@@ -311,7 +328,7 @@ describe('Product endpoints', () => {
       it('return 401 and error message when not logged in',
       async () => {
         const res = await request(server)
-          .put(`/products/${product_id}`)
+          .put(`/products/${product_ids[2]}`)
           .set('Accept', 'application/json')
           .send({ stock: 100 });
         expect(res.headers['content-type']).to.match(/json/);
@@ -322,7 +339,7 @@ describe('Product endpoints', () => {
       it("return 403 and error message when user doesn't own product",
       (done) => {
         secondAgent
-          .put(`/products/${product_id}`)
+          .put(`/products/${product_ids[2]}`)
           .set('Accept', 'application/json')
           .send({ stock: 100 })
           .expect(403)
@@ -375,7 +392,7 @@ describe('Product endpoints', () => {
       it('return 200 and updated product object',
       (done) => {
         agent
-          .put(`/products/${product_id}`)
+          .put(`/products/${product_ids[2]}`)
           .set('Accept', 'application/json')
           .send({ stock: 100 })
           .expect(200)
@@ -414,7 +431,7 @@ describe('Product endpoints', () => {
       it('return 401 if not logged in',
       async () => {
         const res = await request(server)
-          .delete(`/products/${product_id}`)
+          .delete(`/products/${product_ids[2]}`)
           .set('Accept', 'application/json')
           .send();
         expect(res.headers['content-type']).to.match(/json/);
@@ -425,7 +442,7 @@ describe('Product endpoints', () => {
       it('return 403 if user does not own product',
       (done) => {
         secondAgent
-          .delete(`/products/${product_id}`)
+          .delete(`/products/${product_ids[2]}`)
           .set('Accept', 'application/json')
           .send()
           .expect(403)
@@ -444,7 +461,7 @@ describe('Product endpoints', () => {
       it('return 200 and message saying which product has been deleted',
       (done) => {
         agent
-          .delete(`/products/${product_id}`)
+          .delete(`/products/${product_ids[2]}`)
           .set('Accept', 'application/json')
           .send()
           .expect(200)
@@ -453,7 +470,7 @@ describe('Product endpoints', () => {
               return done(err);
             }
             expect(res.headers['content-type']).to.match(/json/);
-            expect(res.body.info).to.equal(`Removed product id: ${product_id}`);
+            expect(res.body.info).to.equal(`Removed product id: ${product_ids[2]}`);
             return done();
           });
       });

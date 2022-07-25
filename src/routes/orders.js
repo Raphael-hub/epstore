@@ -39,7 +39,7 @@ router.put('/:order_id', isLoggedIn,  async (req, res, next) => {
         return next({ message: 'Error updating order' });
       }
     }
-    return res.status(200).json(result);
+    return res.status(200).json({ order: result });
   } catch (err) {
     return next(err);
   }
@@ -51,8 +51,9 @@ async (req, res, next) => {
   const { status } = req.body;
   let result;
   try {
+    let result;
     if (status === 'shipped') {
-      const result = await orders.shipOrderProduct(
+      result = await orders.shipOrderProduct(
                              req.user.id,
                              order_id,
                              res.locals.product.id,
@@ -61,7 +62,7 @@ async (req, res, next) => {
         return next({ message: 'Error updating product in order' });
       }
     }
-    return res.status(200).json(result);
+    return res.status(200).json({ order: result });
   } catch (err) {
     return next(err);
   }
@@ -74,7 +75,7 @@ router.delete('/:order_id', isLoggedIn, async (req, res, next) => {
     if (!order) {
       return next({ message: 'Error cancelling order' });
     }
-    return res.status(200).json(order);
+    return res.status(200).json({ order: order });
   } catch (err) {
     return next(err);
   }
@@ -88,7 +89,7 @@ router.delete('/:order_id/:product_id', isLoggedIn, async (req, res, next) => {
     if (!order) {
       return next({ message: 'Error cancelling product in order' });
     }
-    return res.status(200).json(order);
+    return res.status(200).json({ order: order });
   } catch (err) {
     return next(err);
   }
